@@ -67,8 +67,9 @@ def _free_map_skill_dir():
         candidate = Path(configured).resolve()
         if (candidate / "scripts" / "render.py").is_file() and (candidate / "assets" / "template.html").is_file():
             return candidate
-    # Use the explicit free read-only package as the shared map renderer.
-    return Path(__file__).resolve().parents[2] / "architecture-review-report-only"
+    # The Plus package owns its map renderer; the free package is only a
+    # compatibility fallback when an explicit external directory is configured.
+    return Path(__file__).resolve().parents[1]
 
 
 def _free_map_plan_panel(plans, root, bridge_url, progress_url):
@@ -144,7 +145,9 @@ def build_free_module_map(state, state_path):
     report-only copy only supplies the current state and never edits that library.
     """
     skill_dir = _free_map_skill_dir()
-    renderer_path = skill_dir / "scripts" / "render.py"
+    renderer_path = skill_dir / "scripts" / "map_renderer.py"
+    if not renderer_path.is_file():
+        renderer_path = skill_dir / "scripts" / "render.py"
     template_path = skill_dir / "assets" / "template.html"
     if not renderer_path.is_file() or not template_path.is_file():
         raise FileNotFoundError(
