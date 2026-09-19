@@ -150,86 +150,9 @@
   ::-webkit-scrollbar{width:11px;height:11px}
   ::-webkit-scrollbar-thumb{background:#2c3137;border-radius:6px;border:3px solid var(--bg2)}
   ::-webkit-scrollbar-track{background:transparent}
-
-  /* Beginner-first four-lens shell. The module map remains a professional drill-down. */
-  :root{
-    --bg:#ffffff;--bg2:#f7f8fa;--panel:#ffffff;--panel2:#f3f5f8;
-    --ink:#172033;--muted:#5c6473;--faint:#7c8492;--border:#e1e5ec;--border2:#cfd5df;
-    --accent:#2f63d9;--accent-dim:#5d82dc;--accent-soft:rgba(47,99,217,.09);
-    --in:#8390a3;--out:#2f63d9;--c-low:#aab1bc;--c-med:#7f8998;--c-high:#4c5b70;--c-core:#2f63d9;
-  }
-  body{background:#fff;color:var(--ink);overflow:auto}
-  .lens-app{min-height:100vh;background:#fff;padding:0 24px 64px}
-  .lens-app.hidden{display:none}
-  .lens-top{max-width:900px;margin:0 auto;padding:26px 0 0;display:flex;align-items:flex-start;gap:18px}
-  .lens-brand{min-width:0;flex:1}
-  .lens-brand h1{font-size:16px;line-height:1.35;margin:0;font-weight:680;color:var(--ink)}
-  .lens-brand p{font-size:12px;margin:4px 0 0;color:var(--faint)}
-  .version-link{border:0;background:transparent;color:var(--muted);font:inherit;font-size:12px;padding:2px 0;cursor:pointer}
-  .version-link:hover,.version-link:focus-visible{color:var(--accent);outline:none;text-decoration:underline}
-  .lens-tabs{max-width:900px;margin:44px auto 0;display:flex;gap:32px;border-bottom:1px solid var(--border)}
-  .lens-tab{position:relative;border:0;background:transparent;color:var(--muted);font:inherit;font-size:15px;font-weight:620;padding:0 1px 13px;cursor:pointer}
-  .lens-tab[aria-selected="true"]{color:var(--ink)}
-  .lens-tab[aria-selected="true"]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--accent)}
-  .lens-tab:focus-visible,.text-link:focus-visible,.issue-row:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
-  .lens-main{max-width:900px;margin:0 auto;padding-top:54px}
-  .lens-kicker{font-size:12px;color:var(--accent);font-weight:650;letter-spacing:.02em;margin-bottom:12px}
-  .lens-main h2{font-size:28px;line-height:1.35;letter-spacing:-.015em;margin:0 0 28px;max-width:780px;color:var(--ink)}
-  .verdict{display:flex;align-items:baseline;gap:14px;border-bottom:1px solid var(--border);padding-bottom:24px}
-  .status-word{font-size:13px;font-weight:720;white-space:nowrap}
-  .status-risk{color:#b23a35}.status-warning{color:#95620c}.status-good{color:#2f7154}.status-unknown{color:var(--faint)}
-  .verdict-text{font-size:18px;line-height:1.55;color:var(--ink);font-weight:520}
-  .verdict-score{margin-left:auto;font-family:var(--mono);font-size:19px;color:var(--muted)}
-  .issue-list{margin:28px 0 0;border-top:1px solid var(--border)}
-  .issue-row{width:100%;display:grid;grid-template-columns:110px 1fr 22px;gap:18px;align-items:start;text-align:left;border:0;border-bottom:1px solid var(--border);background:transparent;padding:18px 0;cursor:pointer;color:inherit;font:inherit}
-  .issue-row:hover{background:linear-gradient(90deg,transparent,var(--accent-soft),transparent)}
-  .issue-label{font-size:12px;color:var(--muted);padding-top:2px}
-  .issue-text{font-size:14px;line-height:1.55;color:var(--ink)}
-  .issue-arrow{color:var(--faint);text-align:right}
-  .empty-issues{padding:20px 0;border-bottom:1px solid var(--border);font-size:14px;color:var(--muted)}
-  .delta-line{margin-top:22px;font-size:12.5px;color:var(--faint)}
-  .lens-actions{display:flex;gap:22px;flex-wrap:wrap;margin-top:26px}
-  .text-link{border:0;background:transparent;color:var(--accent);font:inherit;font-size:13px;padding:0;cursor:pointer;text-decoration:none}
-  .text-link:hover{text-decoration:underline}
-  .back-line{margin-bottom:28px}
-  .dimension-block{padding:24px 0;border-top:1px solid var(--border)}
-  .dimension-head{display:flex;align-items:baseline;gap:12px;margin-bottom:8px}
-  .dimension-head h3{font-size:18px;margin:0;color:var(--ink)}
-  .dimension-question{font-size:13px;color:var(--muted);margin:0 0 12px;line-height:1.55}
-  .dimension-summary{font-size:15px;line-height:1.65;margin:0 0 14px}
-  .evidence-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}
-  .evidence-list li{font-size:13px;line-height:1.55;color:var(--muted)}
-  .evidence-where{font-family:var(--mono);font-size:11px;color:var(--accent);word-break:break-all}
-  .module-links{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
-  .version-grid{display:grid;grid-template-columns:160px 1fr;border-top:1px solid var(--border);margin-top:22px}
-  .version-grid div{padding:13px 0;border-bottom:1px solid var(--border);font-size:13px}
-  .version-grid .key{color:var(--muted)}
-  .app{display:none!important}
-  .app.open{display:grid!important;position:fixed;inset:0;z-index:30;background:var(--bg)}
-  .app header{background:#fff}
-  .node.sel{background:#eef3ff;box-shadow:0 0 0 1px var(--accent),0 6px 22px rgba(47,99,217,.14)}
-  .finding{background:#fff}.finding .txt,.report .theme,.std-desc{color:#394150}.report .theme b{color:var(--ink)}
-  .scorebox .bar{background:#e7eaf0}.modal{background:rgba(23,32,51,.28)}
-  .toast{box-shadow:0 6px 20px rgba(23,32,51,.2)}
-  @media(max-width:720px){
-    .lens-app{padding:0 18px 46px}.lens-top{padding-top:20px}.lens-tabs{margin-top:34px;gap:24px}
-    .lens-main{padding-top:38px}.lens-main h2{font-size:23px}.verdict{display:block}.verdict-text{margin-top:8px}.verdict-score{display:block;margin:8px 0 0}
-    .issue-row{grid-template-columns:86px 1fr 16px;gap:10px}.version-grid{grid-template-columns:112px 1fr}
-  }
 </style>
 </head>
 <body>
-<div class="lens-app" id="lensApp">
-  <header class="lens-top">
-    <div class="lens-brand">
-      <h1 id="lensProject">Architecture review</h1>
-      <p id="lensSub"></p>
-    </div>
-    <button class="version-link" id="versionBtn" type="button"></button>
-  </header>
-  <nav class="lens-tabs" id="lensTabs" aria-label="Architecture lenses"></nav>
-  <main class="lens-main" id="lensMain"></main>
-</div>
 <div class="app">
   <header>
     <div class="mark"></div>
@@ -251,7 +174,6 @@
     </select>
     <select class="filt" id="tagFilter" title="Show only modules with this issue"><option value="">Any issue</option></select>
     <span class="fcount" id="fcount"></span>
-    <button class="btn" id="homeBtn">分连变保</button>
     <button class="btn" id="stdBtn">Standard</button>
     <button class="btn" id="reportBtn">Audit report</button>
     <button class="btn" id="healthBtn">Color: coupling</button>
@@ -273,117 +195,17 @@
 <div class="modal" id="stdModal"></div>
 
 <script>
-const DATA = __ARCH_DATA__;
+const DATA = {"meta": {"project": "Acme Storefront", "subtitle": "Sample project — a codemap demo", "lang": "en", "generatedAt": "2026-01-01", "htmlPath": ".codemap/codemap.html", "mdPath": ".codemap/codemap.md", "spineDesc": "A shopper opens a Product page → the cartStore calls the API Gateway → the orders route hands off to OrderService → which writes the Order aggregate through the Repository.", "tracked_loc": 28640, "tracked_files": 214, "locLine": "≈ 28,600 LoC · 214 files (sample)"}, "bands": [{"id": "shell", "tier": "fe", "t": "Frontend · Shell & Routing", "d": "layout, routing, navigation"}, {"id": "pages", "tier": "fe", "t": "Frontend · Pages", "d": "screens the user sees"}, {"id": "stores", "tier": "fe", "t": "Frontend · State Stores", "d": "one store per domain"}, {"id": "transport", "tier": "fe", "t": "Frontend · Transport", "d": "REST + WebSocket clients"}, {"id": "wire", "wire": true, "t": "◀ REST / WebSocket ▶"}, {"id": "api", "tier": "be", "t": "Backend · API Routes", "d": "HTTP endpoints"}, {"id": "services", "tier": "be", "t": "Backend · Services", "d": "business logic"}, {"id": "domain", "tier": "be", "t": "Backend · Domain Core", "d": "entities & value objects"}, {"id": "data", "tier": "be", "t": "Backend · Persistence", "d": "data access"}, {"id": "workers", "tier": "be", "t": "Backend · Workers & Jobs", "d": "async processing"}, {"id": "integrations", "tier": "be", "t": "Integrations", "d": "third-party adapters"}], "spine": ["product_page", "cart_store", "api_client", "api_gw", "orders_api", "order_svc", "order_model", "repo"], "reportThemes": [["Payments is the weakest area", "PaymentService and the payments routes are still sandbox stubs (fake-output / stub) — real provider integration is unfinished, yet it is already wired into checkout."], ["Checkout and Order carry the most debt", "checkout_page, cartStore and OrderService are god-components with duplicated state-machine logic; the multi-step checkout mixes UI, validation and API calls in one file."], ["Dual-format is creeping in at the order boundary", "orders routes, checkoutStore and the checkout page accept both legacy and v2 payload shapes — normalize once at the transport layer instead."], ["apiClient is mostly glue", "~50 near-identical endpoint wrappers add no value; generate them or collapse to a single typed client."]], "standard": {"rubric": [{"grade": "A", "score": 95, "range": "90–100", "en": "clean, well-scoped, idiomatic", "zh": "干净、职责单一、地道"}, {"grade": "B", "score": 82, "range": "75–89", "en": "minor issues: a documented shim, mild bloat", "zh": "小问题：有文档的兼容、轻微臃肿"}, {"grade": "C", "score": 67, "range": "60–74", "en": "notable hacks / fallbacks / bloat / duplication", "zh": "明显的 hack / 回退 / 臃肿 / 重复"}, {"grade": "D", "score": 50, "range": "40–59", "en": "significant legacy / stubs / duplication, or a protocol violation", "zh": "严重的遗留 / 占位 / 重复，或协议违规"}, {"grade": "F", "score": 25, "range": "0–39", "en": "broken, fake output, or unfinished-but-wired", "zh": "损坏、伪造输出，或未完成却已接线"}], "severities": [{"key": "HIGH", "en": "wrong / dangerous / fake, a protocol or security issue, or a genuine maintenance hazard", "zh": "错误 / 危险 / 伪造、协议或安全问题，或真正的维护地雷"}, {"key": "MED", "en": "a real smell a maintainer should fix", "zh": "维护者该修的真坏味"}, {"key": "LOW", "en": "a documented shim, a cosmetic cast, benign bloat — worth noting, not urgent", "zh": "有文档的兼容、装饰性 cast、良性臃肿 —— 值得记、不紧急"}], "coupling": [{"key": "core", "en": "system spine — central to almost everything", "zh": "系统主线 —— 几乎牵连一切"}, {"key": "high", "en": "many connections", "zh": "连接很多"}, {"key": "med", "en": "moderate", "zh": "中等"}, {"key": "low", "en": "leaf / self-contained", "zh": "叶子 / 自洽"}], "tags": [{"id": "monkeypatch", "label": "monkeypatch", "labelZh": "猴补丁", "bad": true, "en": "runtime mutation of another module / stdlib / vendor; reflection or prototype patching", "zh": "运行时改写别的模块/标准库/依赖；反射或原型补丁"}, {"id": "fallback", "label": "fallback", "labelZh": "回退兜底", "bad": true, "en": "'try the real thing, then fake/degrade'; a||b||c chains that hide which value is real", "zh": "“先试真的再退化/造假”；a||b||c 掩盖哪个是真值"}, {"id": "silent-except", "label": "silent-except", "labelZh": "静默吞错", "bad": true, "en": "swallowed errors: empty catch / except:pass / ignored return codes", "zh": "吞掉错误：空 catch / except:pass / 忽略返回码"}, {"id": "legacy", "label": "legacy", "labelZh": "遗留", "bad": true, "en": "deprecated/back-compat shims, dead-but-shipped code, parallel old+new paths", "zh": "遗留/兼容垫片、已发布的死代码、新旧并存"}, {"id": "dual-format", "label": "dual-format", "labelZh": "双格式", "bad": true, "en": "accepting two shapes for one field (snake||camel), patched through the code", "zh": "同一字段接受两种形态（snake||camel）并散落各处"}, {"id": "stub", "label": "stub", "labelZh": "占位桩", "bad": true, "en": "NotImplemented / TODO / dead buttons / demo scripts presented as real", "zh": "未实现/TODO/死按钮/演示脚本当成品"}, {"id": "fake-output", "label": "fake-output", "labelZh": "伪造输出", "bad": true, "en": "returns random/canned/hardcoded results where real work is implied", "zh": "本应真算的地方返回随机/写死结果"}, {"id": "duplication", "label": "duplication", "labelZh": "重复", "bad": true, "en": "copy-pasted logic, or an existing shared abstraction not reused", "zh": "复制粘贴，或已有共享抽象却不复用"}, {"id": "bloat", "label": "bloat", "labelZh": "臃肿", "bad": true, "en": "oversized file / function; too many responsibilities in one unit", "zh": "超大文件/函数；单元职责过多"}, {"id": "glue", "label": "glue", "labelZh": "胶水", "bad": true, "en": "valueless pass-through: rows of thin forwarders / no-op adapters", "zh": "无价值透传：成片薄包装 / 零转换适配器"}, {"id": "any-escape", "label": "any-escape", "labelZh": "类型逃逸", "bad": true, "en": "bypassing the type system: as any / @ts-ignore / dynamic / void* / reinterpret_cast / unsafe", "zh": "绕过类型系统：as any / @ts-ignore / dynamic / void* / reinterpret_cast / unsafe"}, {"id": "over-fit", "label": "over-fit", "labelZh": "过度特化", "bad": true, "en": "hardcoded to one case where a small generalization was expected", "zh": "硬编码单一情况，本应小幅泛化"}, {"id": "god-component", "label": "god-component", "labelZh": "上帝组件", "bad": true, "en": "one component/class/file doing far too much", "zh": "一个组件/类/文件做太多事"}, {"id": "placeholder", "label": "placeholder", "labelZh": "占位", "bad": true, "en": "unfinished UI / data presented as if complete", "zh": "未完成的 UI/数据当作已完成"}, {"id": "clean", "label": "clean", "labelZh": "干净", "bad": false, "en": "no material issues — well-scoped", "zh": "无实质问题 —— 职责单一"}]}, "modules": [{"id": "app_shell", "label": "App Shell", "band": "shell", "path": "src/app/AppShell.tsx", "desc": "Root component: layout, providers, top-level routing and the error boundary.", "coupling": "core", "deps": ["router", "ui_store", "auth_store"], "loc": 420, "score": 84, "grade": "B", "tags": [], "findings": []}, {"id": "router", "label": "Router", "band": "shell", "path": "src/app/router.tsx", "desc": "Client-side route table and auth guards.", "coupling": "high", "deps": [], "loc": 180, "score": 90, "grade": "A", "tags": [], "findings": []}, {"id": "nav", "label": "Navigation", "band": "shell", "path": "src/app/Nav.tsx", "desc": "Top nav, sidebar and breadcrumbs.", "coupling": "low", "deps": ["router", "auth_store"], "loc": 240, "score": 88, "grade": "B", "tags": [], "findings": []}, {"id": "catalog_page", "label": "Catalog", "band": "pages", "path": "src/pages/Catalog.tsx", "desc": "Product listing with filters, sorting and pagination.", "coupling": "med", "deps": ["catalog_store", "search_store"], "loc": 980, "score": 78, "grade": "B", "tags": [], "findings": []}, {"id": "product_page", "label": "Product", "band": "pages", "path": "src/pages/Product.tsx", "desc": "Product detail: gallery, variant picker, reviews, add-to-cart.", "coupling": "med", "deps": ["catalog_store", "cart_store"], "loc": 1240, "score": 72, "grade": "C", "tags": ["bloat"], "findings": [{"sev": "MED", "loc": "src/pages/Product.tsx", "text": "1240-line component: gallery, variant picker and reviews in one file."}]}, {"id": "cart_page", "label": "Cart", "band": "pages", "path": "src/pages/Cart.tsx", "desc": "Cart view, line-item editing and promo codes.", "coupling": "med", "deps": ["cart_store", "pricing_client"], "loc": 1420, "score": 70, "grade": "C", "tags": ["god-component"], "findings": []}, {"id": "checkout_page", "label": "Checkout", "band": "pages", "path": "src/pages/Checkout.tsx", "desc": "Multi-step checkout: address, shipping, payment, review.", "coupling": "high", "deps": ["cart_store", "auth_store", "payments_client"], "loc": 1860, "score": 58, "grade": "D", "tags": ["god-component", "dual-format", "fallback"], "findings": [{"sev": "HIGH", "loc": "src/pages/Checkout.tsx", "text": "1860-line god-component mixing the address/shipping/payment steps, validation and direct API calls."}, {"sev": "MED", "loc": "src/pages/Checkout.tsx:412", "text": "reads both `postal_code` and `postalCode` from the address form (dual-format)."}, {"sev": "LOW", "loc": "src/pages/Checkout.tsx:980", "text": "silent catch around the shipping-rate fetch falls back to a flat rate."}]}, {"id": "account_page", "label": "Account", "band": "pages", "path": "src/pages/Account.tsx", "desc": "Profile, order history and saved addresses.", "coupling": "low", "deps": ["auth_store"], "loc": 760, "score": 82, "grade": "B", "tags": [], "findings": []}, {"id": "admin_page", "label": "Admin", "band": "pages", "path": "src/pages/Admin.tsx", "desc": "Internal dashboard: orders, inventory and reports.", "coupling": "med", "deps": ["admin_client"], "loc": 2100, "score": 66, "grade": "C", "tags": ["bloat", "any-escape"], "findings": [{"sev": "MED", "loc": "src/pages/Admin.tsx", "text": "2100-line page: reports, tables and editors all in one file."}, {"sev": "LOW", "loc": "src/pages/Admin.tsx:300", "text": "several `as any` casts around the chart library."}]}, {"id": "search_page", "label": "Search", "band": "pages", "path": "src/pages/Search.tsx", "desc": "Search results with facets.", "coupling": "low", "deps": ["search_store"], "loc": 540, "score": 84, "grade": "B", "tags": [], "findings": []}, {"id": "cart_store", "label": "cartStore", "band": "stores", "path": "src/stores/cart.ts", "desc": "Cart line items, totals and promo state.", "coupling": "high", "deps": ["api_client"], "loc": 360, "score": 74, "grade": "C", "tags": ["duplication"], "findings": [{"sev": "MED", "loc": "src/stores/cart.ts:90", "text": "cart totals re-implemented here and in PricingEngine (duplication)."}]}, {"id": "auth_store", "label": "authStore", "band": "stores", "path": "src/stores/auth.ts", "desc": "Session, tokens and the current user.", "coupling": "core", "deps": ["api_client"], "loc": 290, "score": 80, "grade": "B", "tags": [], "findings": []}, {"id": "catalog_store", "label": "catalogStore", "band": "stores", "path": "src/stores/catalog.ts", "desc": "Products, categories and cached pages.", "coupling": "high", "deps": ["api_client"], "loc": 410, "score": 86, "grade": "B", "tags": [], "findings": []}, {"id": "search_store", "label": "searchStore", "band": "stores", "path": "src/stores/search.ts", "desc": "Query, facets and results.", "coupling": "med", "deps": ["api_client"], "loc": 220, "score": 82, "grade": "B", "tags": [], "findings": []}, {"id": "ui_store", "label": "uiStore", "band": "stores", "path": "src/stores/ui.ts", "desc": "Modals, toasts and theme.", "coupling": "low", "deps": [], "loc": 150, "score": 88, "grade": "B", "tags": [], "findings": []}, {"id": "checkout_store", "label": "checkoutStore", "band": "stores", "path": "src/stores/checkout.ts", "desc": "Checkout step state and form drafts.", "coupling": "med", "deps": ["cart_store"], "loc": 480, "score": 62, "grade": "C", "tags": ["dual-format", "legacy"], "findings": [{"sev": "MED", "loc": "src/stores/checkout.ts:40", "text": "reads both snake_case and camelCase address fields (dual-format)."}, {"sev": "LOW", "loc": "src/stores/checkout.ts:8", "text": "legacy single-step draft kept for old links."}]}, {"id": "api_client", "label": "apiClient", "band": "transport", "path": "src/transport/apiClient.ts", "desc": "REST client — ~50 thin endpoint wrappers plus auth and retry.", "coupling": "core", "deps": ["api_gw"], "loc": 690, "score": 68, "grade": "C", "tags": ["glue", "bloat"], "findings": [{"sev": "MED", "loc": "src/transport/apiClient.ts", "text": "~50 one-line get/post wrappers that only forward args (glue) — generate or collapse to a typed client."}, {"sev": "LOW", "loc": "src/transport/apiClient.ts:1", "text": "one 690-line file mixing transport with the whole endpoint surface."}]}, {"id": "ws_client", "label": "wsClient", "band": "transport", "path": "src/transport/wsClient.ts", "desc": "WebSocket for live order and stock updates.", "coupling": "med", "deps": ["api_gw"], "loc": 230, "score": 84, "grade": "B", "tags": [], "findings": []}, {"id": "payments_client", "label": "paymentsClient", "band": "transport", "path": "src/transport/payments.ts", "desc": "Thin bridge to the payments API.", "coupling": "med", "deps": ["stripe_gw"], "loc": 140, "score": 86, "grade": "B", "tags": [], "findings": []}, {"id": "admin_client", "label": "adminClient", "band": "transport", "path": "src/transport/admin.ts", "desc": "Admin-only API client.", "coupling": "low", "deps": ["api_gw"], "loc": 180, "score": 80, "grade": "B", "tags": [], "findings": []}, {"id": "pricing_client", "label": "pricingClient", "band": "transport", "path": "src/transport/pricing.ts", "desc": "Live price/quote client.", "coupling": "low", "deps": ["api_gw"], "loc": 110, "score": 84, "grade": "B", "tags": [], "findings": []}, {"id": "api_gw", "label": "API Gateway", "band": "api", "path": "api/app.py", "desc": "HTTP app: routing, middleware, auth and the request lifecycle.", "coupling": "core", "deps": ["auth_api", "products_api", "orders_api", "payments_api", "search_api"], "loc": 540, "score": 88, "grade": "B", "tags": [], "findings": []}, {"id": "auth_api", "label": "auth routes", "band": "api", "path": "api/auth.py", "desc": "Login, signup, token refresh and OAuth.", "coupling": "high", "deps": ["auth_svc"], "loc": 420, "score": 78, "grade": "B", "tags": ["silent-except"], "findings": [{"sev": "LOW", "loc": "api/auth.py:140", "text": "broad except around the OAuth token exchange logs but swallows the cause."}]}, {"id": "products_api", "label": "products routes", "band": "api", "path": "api/products.py", "desc": "Product and category CRUD + listing.", "coupling": "med", "deps": ["catalog_svc"], "loc": 360, "score": 84, "grade": "B", "tags": [], "findings": []}, {"id": "orders_api", "label": "orders routes", "band": "api", "path": "api/orders.py", "desc": "Cart, order placement and status.", "coupling": "high", "deps": ["order_svc"], "loc": 610, "score": 74, "grade": "C", "tags": ["dual-format"], "findings": [{"sev": "MED", "loc": "api/orders.py:88", "text": "accepts both the legacy and v2 cart payload shapes (dual-format)."}]}, {"id": "payments_api", "label": "payments routes", "band": "api", "path": "api/payments.py", "desc": "Charge, refund and webhooks (provider integration WIP).", "coupling": "high", "deps": ["payment_svc"], "loc": 480, "score": 55, "grade": "D", "tags": ["stub", "fallback"], "findings": [{"sev": "HIGH", "loc": "api/payments.py:44", "text": "webhook handler always returns 200 without verifying the signature (stub)."}, {"sev": "MED", "loc": "api/payments.py:70", "text": "falls back to marking the order paid when the provider call times out."}]}, {"id": "search_api", "label": "search routes", "band": "api", "path": "api/search.py", "desc": "Query and indexing endpoints.", "coupling": "low", "deps": ["search_svc"], "loc": 240, "score": 82, "grade": "B", "tags": [], "findings": []}, {"id": "auth_svc", "label": "AuthService", "band": "services", "path": "services/auth.py", "desc": "Credentials, sessions and password hashing.", "coupling": "high", "deps": ["user_model", "token_util"], "loc": 520, "score": 80, "grade": "B", "tags": [], "findings": []}, {"id": "order_svc", "label": "OrderService", "band": "services", "path": "services/order.py", "desc": "Order placement, the state machine and fulfillment.", "coupling": "core", "deps": ["order_model", "inventory_svc", "pricing_svc", "payment_svc"], "loc": 1480, "score": 64, "grade": "C", "tags": ["duplication", "bloat"], "findings": [{"sev": "HIGH", "loc": "services/order.py", "text": "1480-line service; the order state machine is duplicated between place() and fulfill()."}, {"sev": "MED", "loc": "services/order.py:620", "text": "inventory reservation logic copy-pasted from InventoryService."}]}, {"id": "pricing_svc", "label": "PricingEngine", "band": "services", "path": "services/pricing.py", "desc": "Prices, taxes, discounts and promotions.", "coupling": "high", "deps": ["product_model"], "loc": 880, "score": 70, "grade": "C", "tags": ["over-fit"], "findings": [{"sev": "MED", "loc": "services/pricing.py:120", "text": "discount rules hardcoded to the current promo set (over-fit)."}]}, {"id": "inventory_svc", "label": "InventoryService", "band": "services", "path": "services/inventory.py", "desc": "Stock levels and reservations.", "coupling": "med", "deps": ["product_model", "repo"], "loc": 540, "score": 78, "grade": "B", "tags": [], "findings": []}, {"id": "payment_svc", "label": "PaymentService", "band": "services", "path": "services/payment.py", "desc": "Charges/refunds — currently a sandbox stub returning canned results.", "coupling": "high", "deps": ["stripe_gw"], "loc": 260, "score": 48, "grade": "D", "tags": ["stub", "fake-output"], "findings": [{"sev": "HIGH", "loc": "services/payment.py:31", "text": "charge()/refund() return a canned `{status:'succeeded'}` — sandbox stub, no real gateway call."}, {"sev": "MED", "loc": "services/payment.py:88", "text": "'TODO: wire the real provider before launch.'"}]}, {"id": "catalog_svc", "label": "CatalogService", "band": "services", "path": "services/catalog.py", "desc": "Product/category reads with caching.", "coupling": "med", "deps": ["product_model", "repo"], "loc": 430, "score": 86, "grade": "B", "tags": [], "findings": []}, {"id": "search_svc", "label": "SearchService", "band": "services", "path": "services/search.py", "desc": "Index and query; falls back to SQL LIKE when the search cluster is down.", "coupling": "med", "deps": ["repo"], "loc": 470, "score": 76, "grade": "B", "tags": ["fallback"], "findings": [{"sev": "LOW", "loc": "services/search.py:80", "text": "documented fallback to SQL LIKE when Elasticsearch is unreachable."}]}, {"id": "notif_svc", "label": "NotificationService", "band": "services", "path": "services/notify.py", "desc": "Email/SMS/push fan-out.", "coupling": "low", "deps": ["email_worker"], "loc": 300, "score": 84, "grade": "B", "tags": [], "findings": []}, {"id": "order_model", "label": "Order", "band": "domain", "path": "domain/order.py", "desc": "Order aggregate: items, totals and status.", "coupling": "core", "deps": ["product_model", "user_model"], "loc": 380, "score": 88, "grade": "B", "tags": [], "findings": []}, {"id": "product_model", "label": "Product", "band": "domain", "path": "domain/product.py", "desc": "Product, variant and category entities.", "coupling": "high", "deps": [], "loc": 260, "score": 90, "grade": "A", "tags": [], "findings": []}, {"id": "user_model", "label": "User", "band": "domain", "path": "domain/user.py", "desc": "User, address and role entities.", "coupling": "high", "deps": [], "loc": 210, "score": 88, "grade": "B", "tags": [], "findings": []}, {"id": "money_util", "label": "Money", "band": "domain", "path": "domain/money.py", "desc": "Currency-safe money arithmetic.", "coupling": "med", "deps": [], "loc": 120, "score": 92, "grade": "A", "tags": [], "findings": []}, {"id": "token_util", "label": "TokenUtil", "band": "domain", "path": "domain/token.py", "desc": "JWT sign/verify helpers.", "coupling": "med", "deps": [], "loc": 90, "score": 86, "grade": "B", "tags": [], "findings": []}, {"id": "repo", "label": "Repository", "band": "data", "path": "data/repo.py", "desc": "Data-access layer over the database.", "coupling": "core", "deps": ["db", "migrations"], "loc": 640, "score": 72, "grade": "C", "tags": ["duplication"], "findings": [{"sev": "MED", "loc": "data/repo.py", "text": "per-entity CRUD copy-pasted across 9 repositories — extract a base."}]}, {"id": "db", "label": "DB Pool", "band": "data", "path": "data/db.py", "desc": "Connection pool and query helpers.", "coupling": "high", "deps": [], "loc": 180, "score": 90, "grade": "A", "tags": [], "findings": []}, {"id": "migrations", "label": "Migrations", "band": "data", "path": "data/migrations", "desc": "Schema migrations.", "coupling": "low", "deps": [], "loc": 220, "score": 85, "grade": "B", "tags": [], "findings": []}, {"id": "email_worker", "label": "EmailWorker", "band": "workers", "path": "workers/email.py", "desc": "Async email queue consumer.", "coupling": "low", "deps": ["notif_tmpl"], "loc": 260, "score": 80, "grade": "B", "tags": [], "findings": []}, {"id": "webhook_dispatcher", "label": "WebhookDispatcher", "band": "workers", "path": "workers/webhooks.py", "desc": "Outbound webhooks with retry.", "coupling": "med", "deps": [], "loc": 340, "score": 68, "grade": "C", "tags": ["silent-except", "legacy"], "findings": [{"sev": "MED", "loc": "workers/webhooks.py:55", "text": "`except: pass` swallows delivery errors — failed webhooks vanish."}, {"sev": "LOW", "loc": "workers/webhooks.py:12", "text": "legacy v1 payload path kept alongside v2."}]}, {"id": "notif_tmpl", "label": "Templates", "band": "workers", "path": "workers/templates.py", "desc": "Email/notification templates.", "coupling": "low", "deps": [], "loc": 150, "score": 84, "grade": "B", "tags": [], "findings": []}, {"id": "stripe_gw", "label": "Stripe Gateway", "band": "integrations", "path": "integrations/stripe.py", "desc": "Adapter to the Stripe payments API.", "coupling": "med", "deps": [], "loc": 280, "score": 78, "grade": "B", "tags": [], "findings": []}, {"id": "shipping_gw", "label": "Shipping Provider", "band": "integrations", "path": "integrations/shipping.py", "desc": "Adapter to a shipping rate/label API.", "coupling": "low", "deps": [], "loc": 230, "score": 74, "grade": "C", "tags": ["glue"], "findings": [{"sev": "LOW", "loc": "integrations/shipping.py", "text": "adapter forwards every field unchanged (glue)."}]}, {"id": "analytics_sink", "label": "Analytics", "band": "integrations", "path": "integrations/analytics.py", "desc": "Event sink to the analytics pipeline.", "coupling": "low", "deps": [], "loc": 190, "score": 70, "grade": "C", "tags": ["silent-except"], "findings": [{"sev": "LOW", "loc": "integrations/analytics.py:22", "text": "fire-and-forget send swallows failures silently."}]}]};
 const M = DATA.modules || [];
 const BANDS = DATA.bands || [];
 const SPINE = DATA.spine || [];
 const REPORT_THEMES = DATA.reportThemes || [];
 const META = DATA.meta || {};
-const LENSES = DATA.architectureLenses || [];
-const DIMENSIONS = DATA.architectureDimensions || [];
-const AUDIT_VERSION = DATA.auditVersion || {};
-const AUDIT_DELTA = DATA.auditDelta || null;
 /* HTML-escape every string that comes from modules.json (labels, descriptions,
    findings, tags, paths, meta, themes, standard) before it enters innerHTML. The only
    trusted HTML is the template's own i18n strings (tl) and the structural markup. */
 function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, c=>(
   {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
-const lensApp=document.getElementById("lensApp");
-const lensTabs=document.getElementById("lensTabs");
-const lensMain=document.getElementById("lensMain");
-const mapApp=document.querySelector(".app");
-const lensStatus={
-  zh:{risk:"优先处理",warning:"需关注",good:"稳",unknown:"待确认"},
-  en:{risk:"priority",warning:"attention",good:"stable",unknown:"unknown"}
-};
-function lensText(item,key){return LANG==="zh"?(item[key+"Zh"]||item[key]||""):(item[key]||item[key+"Zh"]||"");}
-function statusText(status){return (lensStatus[LANG]||lensStatus.en)[status]||status;}
-function versionLabel(){
-  if(AUDIT_VERSION.version) return LANG==="zh"?`审计版本 ${AUDIT_VERSION.version}`:`Audit ${AUDIT_VERSION.version}`;
-  return LANG==="zh"?"当前工作视图":"Current working view";
-}
-function renderTabs(active){
-  lensTabs.innerHTML=LENSES.map(l=>`<button class="lens-tab" type="button" data-lens="${esc(l.id)}" aria-selected="${l.id===active}">${esc(lensText(l,"label"))}</button>`).join("");
-}
-function deltaText(){
-  if(!AUDIT_VERSION.version) return LANG==="zh"?"当前工作视图 · 尚未留版":"Current working view · not retained";
-  if(!AUDIT_DELTA) return LANG==="zh"?"首次完整审计":"First full audit";
-  const n=AUDIT_DELTA.newIssues||AUDIT_DELTA.new||0;
-  const r=AUDIT_DELTA.resolvedIssues||AUDIT_DELTA.resolved||0;
-  const p=AUDIT_DELTA.persistingIssues||AUDIT_DELTA.persisting||0;
-  const u=AUDIT_DELTA.unknownChanged||0;
-  return LANG==="zh"?`较上一版：新增 ${n} · 已解决 ${r} · 持续 ${p} · 待确认变化 ${u}`:`Since previous: ${n} new · ${r} resolved · ${p} persisting · ${u} unknown changes`;
-}
-function renderLens(id){
-  const lens=LENSES.find(x=>x.id===id)||LENSES[0];
-  if(!lens){
-    lensTabs.innerHTML="";
-    lensMain.innerHTML=`<h2>${LANG==="zh"?"尚无结构化架构审计":"No structured architecture audit yet"}</h2><button class="text-link" type="button" data-action="map">${LANG==="zh"?"查看模块图":"Open module map"}</button>`;
-    return;
-  }
-  renderTabs(lens.id);
-  const issues=(lens.issues||[]).slice(0,3);
-  const score=lens.score==null?"":`<span class="verdict-score">${esc(lens.score)}</span>`;
-  const issueRows=issues.length?issues.map(x=>`<button class="issue-row" type="button" data-dimension="${esc(x.dimensionId)}"><span class="issue-label">${esc(lensText(x,"label"))}</span><span class="issue-text">${esc(x.summary)}</span><span class="issue-arrow" aria-hidden="true">→</span></button>`).join(""):`<div class="empty-issues">${LANG==="zh"?"这个视角暂未发现需展开的问题。":"No expandable issue is currently recorded for this lens."}</div>`;
-  lensMain.innerHTML=`
-    <div class="lens-kicker">${esc(lensText(lens,"label"))} · ${esc(statusText(lens.status))}</div>
-    <h2>${esc(lensText(lens,"question"))}</h2>
-    <div class="verdict"><span class="status-word status-${esc(lens.status)}">${esc(statusText(lens.status))}</span><span class="verdict-text">${esc(lens.summary)}</span>${score}</div>
-    <div class="issue-list">${issueRows}</div>
-    <div class="delta-line">${esc(deltaText())}</div>
-    <div class="lens-actions"><button class="text-link" type="button" data-action="dimensions" data-lens="${esc(lens.id)}">${LANG==="zh"?"查看八维证据":"View dimension evidence"}</button><button class="text-link" type="button" data-action="map">${LANG==="zh"?"查看模块图":"Open module map"}</button></div>`;
-}
-function renderDimensions(lensId,focusId){
-  const lens=LENSES.find(x=>x.id===lensId)||LENSES[0];
-  const dims=DIMENSIONS.filter(d=>d.lens===lens.id);
-  renderTabs(lens.id);
-  const blocks=dims.map(d=>{
-    const ev=(d.evidence||[]).map(e=>{
-      const where=e.file||e.symbol||e.moduleId||e.type||"evidence";
-      return `<li><span class="evidence-where">${esc(where)}</span><br>${esc(e.description)}</li>`;
-    }).join("")||`<li>${LANG==="zh"?"尚无已结构化证据。":"No structured evidence yet."}</li>`;
-    const mods=(d.relatedModules||[]).map(mid=>{
-      const m=M.find(x=>x.id===mid); return m?`<button class="text-link" type="button" data-module="${esc(mid)}">${esc(m.label)}</button>`:"";
-    }).join("");
-    return `<section class="dimension-block" id="dimension-${esc(d.id)}"><div class="dimension-head"><h3>${esc(lensText(d,"label"))}</h3><span class="status-word status-${esc(d.status)}">${esc(statusText(d.status))}</span></div><p class="dimension-question">${esc(lensText(d,"question"))}</p><p class="dimension-summary">${esc(d.summary)}</p><ul class="evidence-list">${ev}</ul>${mods?`<div class="module-links">${mods}</div>`:""}</section>`;
-  }).join("");
-  lensMain.innerHTML=`<div class="back-line"><button class="text-link" type="button" data-action="lens" data-lens="${esc(lens.id)}">← ${LANG==="zh"?"返回结论":"Back to verdict"}</button></div><div class="lens-kicker">${esc(lensText(lens,"label"))}</div><h2>${LANG==="zh"?"对应审计维度与证据":"Dimensions and evidence"}</h2>${blocks}`;
-  if(focusId) requestAnimationFrame(()=>document.getElementById(`dimension-${focusId}`)?.scrollIntoView({behavior:"smooth",block:"start"}));
-}
-function renderVersion(){
-  renderTabs("");
-  const scope=Array.isArray(AUDIT_VERSION.scope)?AUDIT_VERSION.scope.join(" · "):(AUDIT_VERSION.scope||"—");
-  const rows=[
-    [LANG==="zh"?"版本":"Version",AUDIT_VERSION.version||(LANG==="zh"?"尚未留版":"Not retained")],
-    [LANG==="zh"?"模式":"Mode",AUDIT_VERSION.mode||"working"],
-    [LANG==="zh"?"基线":"Baseline",AUDIT_VERSION.baseline||"—"],
-    [LANG==="zh"?"触发原因":"Trigger",AUDIT_VERSION.trigger||"—"],
-    [LANG==="zh"?"审计时间":"Created",AUDIT_VERSION.createdAt||"—"],
-    [LANG==="zh"?"范围":"Scope",scope||"—"]
-  ];
-  lensMain.innerHTML=`<div class="back-line"><button class="text-link" type="button" data-action="lens" data-lens="split">← ${LANG==="zh"?"返回审计":"Back to audit"}</button></div><div class="lens-kicker">${LANG==="zh"?"版本":"Version"}</div><h2>${esc(versionLabel())}</h2><p class="dimension-summary">${esc(deltaText())}</p><div class="version-grid">${rows.map(([k,v])=>`<div class="key">${esc(k)}</div><div>${esc(v)}</div>`).join("")}</div>`;
-}
-function openMap(moduleId){
-  lensApp.classList.add("hidden"); mapApp.classList.add("open");
-  current=null;
-  requestAnimationFrame(()=>{if(moduleId&&M.some(m=>m.id===moduleId))select(moduleId);else clearSel();});
-}
-function closeMap(){mapApp.classList.remove("open");lensApp.classList.remove("hidden");renderLens("split");}
-function bindLensShell(){
-  document.getElementById("lensProject").textContent=META.project||"Project";
-  document.getElementById("lensSub").textContent=LANG==="zh"?"长期维护架构审计":"Maintainability architecture review";
-  const vb=document.getElementById("versionBtn");vb.textContent=versionLabel();vb.onclick=renderVersion;
-  lensTabs.addEventListener("click",e=>{const b=e.target.closest("[data-lens]");if(b)renderLens(b.dataset.lens);});
-  lensMain.addEventListener("click",e=>{
-    const issue=e.target.closest("[data-dimension]");
-    if(issue){const d=DIMENSIONS.find(x=>x.id===issue.dataset.dimension);if(d)renderDimensions(d.lens,d.id);return;}
-    const mod=e.target.closest("[data-module]");if(mod){openMap(mod.dataset.module);return;}
-    const a=e.target.closest("[data-action]");if(!a)return;
-    if(a.dataset.action==="dimensions")renderDimensions(a.dataset.lens);
-    else if(a.dataset.action==="map")openMap();
-    else if(a.dataset.action==="lens")renderLens(a.dataset.lens||"split");
-  });
-}
 let BAD_TAGS = new Set(["monkeypatch","fallback","legacy","dual-format","stub","fake-output","bloat","duplication","glue","silent-except","silent-catch","any-escape","over-fit","god-component","placeholder"]);
 
 /* ---------- i18n: display language via meta.lang (module names never translated) ---------- */
@@ -796,7 +618,6 @@ document.getElementById("search").addEventListener("keydown",e=>{
 document.getElementById("gradeFilter").addEventListener("change",e=>{filterGrade=e.target.value?Number(e.target.value):null;runFilter();});
 document.getElementById("tagFilter").addEventListener("change",e=>{filterTag=e.target.value||null;runFilter();});
 document.getElementById("healthBtn").addEventListener("click",toggleHealth);
-document.getElementById("homeBtn").addEventListener("click",closeMap);
 document.getElementById("reportBtn").addEventListener("click",renderReport);
 document.getElementById("spineBtn").addEventListener("click",()=>{spineOn?clearSel():showSpine();});
 document.getElementById("stdBtn").addEventListener("click",openStandard);
@@ -808,8 +629,6 @@ board.classList.add("show-health");
 document.getElementById("healthBtn").classList.add("active");
 document.getElementById("healthBtn").textContent=tl("colorHealth");
 renderIntro();
-bindLensShell();
-renderLens("split");
 </script>
 </body>
 </html>
