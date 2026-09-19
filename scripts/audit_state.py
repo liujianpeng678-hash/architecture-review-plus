@@ -8,7 +8,6 @@ import json
 import os
 import tempfile
 import uuid
-import sys
 
 from audit_contract import AuditContractError, ContractIssue
 
@@ -127,14 +126,12 @@ class AuditStateRepository:
             if temp_path and os.path.exists(temp_path):
                 try:
                     os.unlink(temp_path)
-                except OSError as exc:
-                    print("audit-state: warning - could not clean temporary file: {}".format(exc),
-                          file=sys.stderr)
+                except OSError:
+                    pass
             try:
                 with open(self.lock_path, encoding="utf-8") as handle:
                     lock = json.load(handle)
                 if lock.get("token") == token:
                     os.unlink(self.lock_path)
-            except (OSError, ValueError, TypeError) as exc:
-                print("audit-state: warning - could not clean audit lock: {}".format(exc),
-                      file=sys.stderr)
+            except (OSError, ValueError, TypeError):
+                pass

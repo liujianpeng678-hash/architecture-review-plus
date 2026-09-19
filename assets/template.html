@@ -159,10 +159,6 @@
     --in:#8390a3;--out:#2f63d9;--c-low:#aab1bc;--c-med:#7f8998;--c-high:#4c5b70;--c-core:#2f63d9;
   }
   body{background:#fff;color:var(--ink);overflow:auto}
-  /* 免费模块图直接进入地图和模块详情，不展示四分视角或八维证据入口。 */
-  #lensApp{display:none!important}
-  .app{display:grid!important}
-  #homeBtn{display:none!important}
   .lens-app{min-height:100vh;background:#fff;padding:0 24px 64px}
   .lens-app.hidden{display:none}
   .lens-top{max-width:900px;margin:0 auto;padding:26px 0 0;display:flex;align-items:flex-start;gap:18px}
@@ -208,7 +204,7 @@
   .version-grid{display:grid;grid-template-columns:160px 1fr;border-top:1px solid var(--border);margin-top:22px}
   .version-grid div{padding:13px 0;border-bottom:1px solid var(--border);font-size:13px}
   .version-grid .key{color:var(--muted)}
-  .app{display:grid!important}
+  .app{display:none!important}
   .app.open{display:grid!important;position:fixed;inset:0;z-index:30;background:var(--bg)}
   .app header{background:#fff}
   .node.sel{background:#eef3ff;box-shadow:0 0 0 1px var(--accent),0 6px 22px rgba(47,99,217,.14)}
@@ -480,7 +476,7 @@ const BUILTIN_STD = {
 };
 const STD_KEY = "codemap.standard."+(META.project||"default");
 function loadStdDraft(){ try{ const s=localStorage.getItem(STD_KEY); return s?JSON.parse(s):null; }catch(e){ return null; } }
-let STDDATA = JSON.parse(JSON.stringify(DATA.standard || BUILTIN_STD));
+let STDDATA = loadStdDraft() || JSON.parse(JSON.stringify(DATA.standard || BUILTIN_STD));
 const TAGMETA = {};
 function rebuildTagMeta(){
   for(const k in TAGMETA) delete TAGMETA[k];

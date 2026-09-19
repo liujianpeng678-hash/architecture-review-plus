@@ -20,14 +20,13 @@ import fnmatch
 import hashlib
 import json
 import os
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
 import uuid
-from repair_bridge import DEFAULT_BRIDGE_ORIGIN, ensure_bridge
 
 from audit_contract import (
     AuditContract,
@@ -38,21 +37,31 @@ from audit_contract import (
     STATE_SCHEMA_VERSION,
     format_contract_error,
 )
-from version_snapshot import (
-    architecture_state_view, collect_source_snapshot, detect_project_type,
-    is_sensitive, normalize_rel, path_excluded, snapshot_delta,
-    snapshot_fingerprint,
-)
-from version_analysis import (
-    architecture_delta, architecture_delta_count, flatten_values, glob_matches,
-    issue_delta, issue_records, keyed_state_delta, map_changed_files_to_modules,
-    module_delta, module_map, reverse_dependency_scope, score_summary,
-)
 
 SCHEMA_VERSION = STATE_SCHEMA_VERSION
 TOOL_VERSION = "2.1"
 VERSION_RE = re.compile(r"^audit-v(\d{4})$")
 MODES = {"full", "incremental", "expanded_incremental"}
+
+SOURCE_EXCLUDES = (
+    "/.codemap/", "/.git/", "/.svn/", "/.hg/", "/.idea/", "/.vs/",
+    "/.codegraph/", "/.codex-tmp/", "/.codex-local-history/",
+    "/node_modules/", "/vendor/", "/third_party/", "/external/",
+    "/.venv/", "/venv/", "/__pycache__/", "/.pytest_cache/",
+    "/dist/", "/build/", "/out/", "/output/", "/target/", "/bin/",
+    "/obj/", "/coverage/", "/.next/", "/.nuxt/", "/.godot/",
+    "/library/", "/temp/", "/logs/", "/qa_screenshots/",
+)
+SOURCE_FILE_EXCLUDES = (
+    ".pyc", ".pyo", ".tmp", ".temp", ".log", ".cache", ".swp", ".swo",
+    ".ds_store", "thumbs.db",
+)
+SENSITIVE_NAMES = {
+    ".env", ".env.local", ".env.production", ".env.development",
+    "credentials.json", "service-account.json", "id_rsa", "id_ed25519",
+}
+SENSITIVE_SUFFIXES = {".pem", ".p12", ".pfx", ".key"}
+
 
 def now_iso():
     return datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat(timespec="seconds")
@@ -100,6 +109,155 @@ def stable_json_hash(value):
     return hashlib.sha256(data.encode("utf-8")).hexdigest()
 
 
+def architecture_state_view(state):
+    """Drop volatile scan/render metadata before deciding whether an audit changed."""
+    meta = dict(state.get("meta") or {})
+    for key in ("generatedAt", "rev", "tracked_loc", "tracked_files", "locLine"):
+        meta.pop(key, None)
+    return {
+        "meta": meta,
+        "excludes": state.get("excludes", []),
+        "bands": state.get("bands", []),
+        "spine": state.get("spine", []),
+        "reportThemes": state.get("reportThemes", []),
+        "architectureLenses": state.get("architectureLenses", []),
+        "architectureDimensions": state.get("architectureDimensions", []),
+        "modules": state.get("modules", []),
+    }
+
+
+def normalize_rel(path):
+    value = str(path).replace("\\", "/")
+    while value.startswith("./"):
+        value = value[2:]
+    return value.lstrip("/")
+
+
+def is_sensitive(name):
+    low = name.lower()
+    return low in SENSITIVE_NAMES or any(low.endswith(s) for s in SENSITIVE_SUFFIXES)
+
+
+def path_excluded(rel, is_dir=False, exact_excludes=None):
+    rel = normalize_rel(rel)
+    low = "/" + rel.lower().strip("/") + ("/" if is_dir else "")
+    if any(token in low for token in SOURCE_EXCLUDES):
+        return True
+    if not is_dir and any(low.endswith(token) for token in SOURCE_FILE_EXCLUDES):
+        return True
+    return rel in (exact_excludes or set())
+
+
+def snapshot_fingerprint(entries):
+    rows = ["{}:{}:{}".format(e["path"], e["size"], e["sha256"]) for e in entries]
+    return hashlib.sha256("\n".join(rows).encode("utf-8")).hexdigest()
+
+
+def collect_source_snapshot(root, previous=None, exact_excludes=None):
+    root = os.path.realpath(root)
+    previous_by_path = {e["path"]: e for e in (previous or {}).get("files", [])}
+    exact_excludes = {normalize_rel(p) for p in (exact_excludes or set())}
+    entries = []
+    sensitive_skipped = []
+    unreadable = []
+
+    for current, dirs, files in os.walk(root, topdown=True, followlinks=False):
+        kept = []
+        for d in dirs:
+            full = os.path.join(current, d)
+            rel = normalize_rel(os.path.relpath(full, root))
+            if os.path.islink(full) or path_excluded(rel, True, exact_excludes):
+                continue
+            kept.append(d)
+        dirs[:] = kept
+
+        for name in files:
+            full = os.path.join(current, name)
+            rel = normalize_rel(os.path.relpath(full, root))
+            if os.path.islink(full) or path_excluded(rel, False, exact_excludes):
+                continue
+            if is_sensitive(name):
+                sensitive_skipped.append(rel)
+                continue
+            try:
+                st = os.stat(full)
+                old = previous_by_path.get(rel)
+                if old and old.get("size") == st.st_size and old.get("mtimeNs") == st.st_mtime_ns:
+                    digest = old["sha256"]
+                else:
+                    digest = sha256_file(full)
+                entries.append({
+                    "path": rel,
+                    "size": st.st_size,
+                    "mtimeNs": st.st_mtime_ns,
+                    "sha256": digest,
+                })
+            except OSError as exc:
+                unreadable.append({"path": rel, "error": str(exc)})
+
+    entries.sort(key=lambda e: e["path"])
+    return {
+        "schemaVersion": SCHEMA_VERSION,
+        "createdAt": now_iso(),
+        "fileCount": len(entries),
+        "totalBytes": sum(e["size"] for e in entries),
+        "sourceFingerprint": snapshot_fingerprint(entries),
+        "sensitiveSkipped": sorted(sensitive_skipped),
+        "unreadable": unreadable,
+        "files": entries,
+    }
+
+
+def snapshot_delta(previous, current):
+    old = {e["path"]: e for e in (previous or {}).get("files", [])}
+    new = {e["path"]: e for e in current.get("files", [])}
+    added = sorted(set(new) - set(old))
+    removed = sorted(set(old) - set(new))
+    modified = sorted(p for p in set(old) & set(new) if old[p]["sha256"] != new[p]["sha256"])
+    return {
+        "added": added,
+        "removed": removed,
+        "modified": modified,
+        "counts": {
+            "added": len(added),
+            "removed": len(removed),
+            "modified": len(modified),
+            "unchanged": len(set(old) & set(new)) - len(modified),
+        },
+    }
+
+
+def detect_project_type(root):
+    root_path = Path(root)
+    game = (root_path / "project.godot").is_file()
+    game = game or (root_path / "game" / "project.godot").is_file()
+    game = game or bool(list(root_path.glob("*.uproject")))
+    game = game or ((root_path / "Assets").is_dir() and (root_path / "ProjectSettings").is_dir())
+    web = (root_path / ".openai" / "hosting.json").is_file()
+    web = web or (root_path / "index.html").is_file()
+    web = web or any((root_path / n).is_file() for n in (
+        "next.config.js", "next.config.mjs", "vite.config.js", "vite.config.ts",
+        "astro.config.mjs", "svelte.config.js", "nuxt.config.ts",
+    ))
+
+    package = root_path / "package.json"
+    if package.is_file():
+        try:
+            data = read_json(package)
+            deps = set((data.get("dependencies") or {})) | set((data.get("devDependencies") or {}))
+            web = web or bool(deps & {
+                "next", "react", "react-dom", "vue", "svelte", "astro", "vite",
+                "@angular/core", "nuxt", "solid-js",
+            })
+            game = game or bool(deps & {
+                "three", "phaser", "pixi.js", "@pixi/core", "babylonjs", "@babylonjs/core",
+            })
+        except (OSError, ValueError, TypeError):
+            pass
+
+    return "hybrid" if web and game else "website" if web else "game" if game else "unknown"
+
+
 def codemap_paths(root, state_arg=None):
     root = os.path.realpath(root)
     codemap = os.path.join(root, ".codemap")
@@ -114,8 +272,10 @@ def output_paths(root, state_path, state):
         value = value or default
         return value if os.path.isabs(value) else os.path.join(root, value)
 
-    # This variant deliberately has no interactive map projection.
-    return (None, os.path.abspath(resolve(meta.get("mdPath"), ".codemap/codemap.md")))
+    return (
+        os.path.abspath(resolve(meta.get("htmlPath"), ".codemap/codemap.html")),
+        os.path.abspath(resolve(meta.get("mdPath"), ".codemap/codemap.md")),
+    )
 
 
 def rel_if_inside(path, root):
@@ -128,11 +288,9 @@ def rel_if_inside(path, root):
     return normalize_rel(rel)
 
 
-def exact_audit_outputs(root, state_path, md_path):
+def exact_audit_outputs(root, state_path, html_path, md_path):
     out = set()
-    for p in (state_path, md_path):
-        if not p:
-            continue
+    for p in (state_path, html_path, md_path):
         rel = rel_if_inside(p, root)
         if rel:
             out.add(rel)
@@ -195,12 +353,202 @@ def run_scan(root, state_path):
         fail("scan.py returned invalid JSON")
 
 
+def module_map(state):
+    return {m.get("id"): m for m in state.get("modules", []) if m.get("id")}
+
+
+def module_delta(previous_state, current_state):
+    old = module_map(previous_state or {})
+    new = module_map(current_state)
+    added = sorted(set(new) - set(old))
+    removed = sorted(set(old) - set(new))
+    content_changed = sorted(
+        mid for mid in set(old) & set(new)
+        if old[mid].get("contentHash") != new[mid].get("contentHash")
+    )
+    audit_changed = sorted(
+        mid for mid in set(old) & set(new)
+        if any(old[mid].get(k) != new[mid].get(k)
+               for k in ("score", "grade", "tags", "findings", "auditedHash"))
+    )
+    return {
+        "added": added,
+        "removed": removed,
+        "contentChanged": content_changed,
+        "auditChanged": audit_changed,
+    }
+
+
+def keyed_state_delta(previous_state, current_state, key):
+    old = {str(item.get("id")): item for item in (previous_state or {}).get(key, []) if item.get("id")}
+    new = {str(item.get("id")): item for item in (current_state or {}).get(key, []) if item.get("id")}
+    return {
+        "added": sorted(set(new) - set(old)),
+        "removed": sorted(set(old) - set(new)),
+        "changed": sorted(
+            item_id for item_id in set(old) & set(new)
+            if stable_json_hash(old[item_id]) != stable_json_hash(new[item_id])
+        ),
+    }
+
+
+def architecture_delta(previous_state, current_state):
+    return {
+        "dimensions": keyed_state_delta(previous_state, current_state, "architectureDimensions"),
+        "lenses": keyed_state_delta(previous_state, current_state, "architectureLenses"),
+    }
+
+
+def architecture_delta_count(delta):
+    return sum(len(values) for group in delta.values() for values in group.values())
+
+
 def validate_complete_audit_state(state, contract):
     """Validate every publishable semantic fact through the shared contract."""
     try:
         contract.validate_publishable_state(state)
     except AuditContractError as exc:
         fail(format_contract_error(exc))
+
+
+def reverse_dependency_scope(state, changed_ids):
+    """Return direct and transitive consumers for incremental-audit scoping."""
+    modules = module_map(state)
+    changed = sorted(mid for mid in set(changed_ids) if mid in modules)
+    reverse = {mid: set() for mid in modules}
+    for mid, mod in modules.items():
+        for dep in mod.get("deps") or []:
+            if dep in reverse:
+                reverse[dep].add(mid)
+    direct = sorted({consumer for mid in changed for consumer in reverse.get(mid, set())}
+                    - set(changed))
+    seen = set(changed)
+    queue = list(changed)
+    while queue:
+        current = queue.pop(0)
+        for consumer in sorted(reverse.get(current, set())):
+            if consumer not in seen:
+                seen.add(consumer)
+                queue.append(consumer)
+    transitive = sorted(seen - set(changed) - set(direct))
+    return {
+        "changedModules": changed,
+        "directConsumers": direct,
+        "transitiveConsumers": transitive,
+        "suggestedAuditScope": changed + direct,
+    }
+
+
+def issue_records(state):
+    """Stable issue identities for human-facing incremental summaries."""
+    records = {}
+    for mod in state.get("modules") or []:
+        mid = mod.get("id")
+        for finding in mod.get("findings") or []:
+            record = {
+                "kind": "module-finding",
+                "moduleId": mid,
+                "severity": finding.get("sev"),
+                "location": finding.get("loc"),
+                "text": finding.get("text"),
+            }
+            key = stable_json_hash(record)
+            records[key] = record
+    for dim in state.get("architectureDimensions") or []:
+        if dim.get("status") not in {"warning", "risk"}:
+            continue
+        record = {
+            "kind": "architecture-dimension",
+            "dimensionId": dim.get("id"),
+            "status": dim.get("status"),
+            "summary": dim.get("summary"),
+        }
+        key = "dimension:" + str(dim.get("id"))
+        records[key] = record
+    return records
+
+
+def issue_delta(previous_state, current_state):
+    previous = issue_records(previous_state or {})
+    current = issue_records(current_state)
+    old_keys, new_keys = set(previous), set(current)
+    added = sorted(new_keys - old_keys)
+    removed = sorted(old_keys - new_keys)
+    persisting = sorted(old_keys & new_keys)
+    old_unknown = {d.get("id") for d in (previous_state or {}).get("architectureDimensions", [])
+                   if d.get("status") == "unknown"}
+    new_unknown = {d.get("id") for d in current_state.get("architectureDimensions", [])
+                   if d.get("status") == "unknown"}
+    return {
+        "newIssues": len(added),
+        "resolvedIssues": len(removed),
+        "persistingIssues": len(persisting),
+        "unknownChanged": len(old_unknown ^ new_unknown),
+        "new": [current[key] for key in added],
+        "resolved": [previous[key] for key in removed],
+        "persisting": [current[key] for key in persisting],
+        "unknownDimensions": sorted(new_unknown),
+    }
+
+
+def flatten_values(values):
+    result = []
+    for value in values or []:
+        for item in str(value).split(","):
+            item = item.strip()
+            if item and item not in result:
+                result.append(item)
+    return result
+
+
+def glob_matches(path, pattern):
+    path = normalize_rel(path)
+    pattern = normalize_rel(pattern)
+    return (fnmatch.fnmatchcase(path, pattern)
+            or PurePosixPath(path).match(pattern)
+            or (pattern.startswith("**/") and fnmatch.fnmatchcase(path, pattern[3:])))
+
+
+def map_changed_files_to_modules(changed_files, state):
+    mapped = {}
+    unmapped = []
+    modules = state.get("modules", [])
+    for path in changed_files:
+        owners = []
+        for mod in modules:
+            patterns = mod.get("paths") or []
+            if isinstance(patterns, str):
+                patterns = [patterns]
+            if any(glob_matches(path, pat) for pat in patterns):
+                owners.append(mod.get("id"))
+        if owners:
+            mapped[path] = owners
+        else:
+            unmapped.append(path)
+    return mapped, sorted(unmapped)
+
+
+def score_summary(state):
+    modules = state.get("modules", [])
+    scored = [m for m in modules if m.get("score") is not None]
+    grades = {g: 0 for g in ("A", "B", "C", "D", "F")}
+    severities = {s: 0 for s in ("HIGH", "MED", "LOW")}
+    for mod in scored:
+        grade = mod.get("grade")
+        if grade in grades:
+            grades[grade] += 1
+        for finding in mod.get("findings") or []:
+            sev = finding.get("sev")
+            if sev in severities:
+                severities[sev] += 1
+    average = round(sum(m["score"] for m in scored) / len(scored), 2) if scored else None
+    return {
+        "moduleCount": len(modules),
+        "scoredModules": len(scored),
+        "averageScore": average,
+        "gradeCounts": grades,
+        "findingCounts": severities,
+    }
 
 
 @contextlib.contextmanager
@@ -221,17 +569,16 @@ def version_lock(codemap):
             current = read_json(path)
             if current.get("token") == token:
                 os.unlink(path)
-        except (OSError, ValueError, TypeError) as exc:
-            print("version: warning - could not clean version.lock: {}".format(exc),
-                  file=sys.stderr)
+        except (OSError, ValueError, TypeError):
+            pass
 
 
 def current_context(root, codemap, state_path):
     if not os.path.isfile(state_path):
         return {"needsInit": True, "projectType": detect_project_type(root)}
     state = read_json(state_path)
-    md_path = output_paths(root, state_path, state)[1]
-    exact = exact_audit_outputs(root, state_path, md_path)
+    html_path, md_path = output_paths(root, state_path, state)
+    exact = exact_audit_outputs(root, state_path, html_path, md_path)
     versions_root = os.path.join(codemap, "versions")
     index = load_index(versions_root)
     latest_base, _, latest_snapshot_path = latest_paths(versions_root, index)
@@ -259,6 +606,7 @@ def current_context(root, codemap, state_path):
         "projectType": detect_project_type(root),
         "state": state,
         "statePath": state_path,
+        "htmlPath": html_path,
         "mdPath": md_path,
         "exactExcludes": exact,
         "versionsRoot": versions_root,
@@ -358,56 +706,24 @@ def copy_artifact(src, dst):
     shutil.copy2(src, dst)
 
 
-def render_staged_audit(stage):
+def default_template_path():
+    return os.path.normpath(os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "..", "assets", "template.html"))
+
+
+def render_staged_audit(stage, template_path):
     render_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "render.py")
-    child_env = os.environ.copy()
-    child_env["PYTHONIOENCODING"] = "utf-8"
-    try:
-        proc = subprocess.run(
-            [sys.executable, render_script,
-             "--state", os.path.join(stage, "modules.json"),
-             "--out-md", os.path.join(stage, "codemap.md"),
-            "--standard", os.path.join(stage, "standard.json")],
-            capture_output=True,
-            env=child_env,
-        )
-    except OSError as exc:
-        fail("render.py could not start while staging: " + str(exc))
-    try:
-        stdout = proc.stdout.decode("utf-8") if proc.stdout else ""
-        stderr = proc.stderr.decode("utf-8") if proc.stderr else ""
-    except UnicodeDecodeError as exc:
-        fail("render.py emitted non-UTF-8 output while staging: " + str(exc))
+    proc = subprocess.run(
+        [sys.executable, render_script,
+         "--state", os.path.join(stage, "modules.json"),
+         "--template", template_path,
+         "--out-html", os.path.join(stage, "codemap.html"),
+         "--out-md", os.path.join(stage, "codemap.md"),
+         "--standard", os.path.join(stage, "standard.json")],
+        capture_output=True, text=True, encoding="utf-8",
+    )
     if proc.returncode != 0:
-        fail("render.py failed while staging: " + (stderr.strip() or stdout.strip()))
-
-
-def open_audit_dashboard(root, state_path, codemap):
-    """Generate the non-map audit dashboard and open it in the default browser."""
-    script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dashboard.py")
-    output = os.path.join(codemap, "audit-dashboard.html")
-    bridge_log = os.path.join(codemap, "repair-bridge.log")
-    try:
-        bridge_url = ensure_bridge(root, requested_url=DEFAULT_BRIDGE_ORIGIN, log_path=bridge_log)
-    except ValueError as exc:
-        print("version: warning - repair bridge configuration rejected: {}".format(exc), file=sys.stderr)
-        bridge_url = DEFAULT_BRIDGE_ORIGIN
-    try:
-        proc = subprocess.run(
-            [sys.executable, script, "--root", root, "--state", state_path,
-             "--out-html", output, "--open"],
-            capture_output=True, text=True, encoding="utf-8",
-            env=dict(os.environ, ARCHITECTURE_REPAIR_BRIDGE_URL=bridge_url + "/repair-requests"),
-        )
-    except OSError as exc:
-        print("version: warning - dashboard.py could not start: {}".format(exc),
-              file=sys.stderr)
-        return None
-    if proc.returncode != 0:
-        print("version: warning - dashboard.py failed: {}".format(
-            proc.stderr.strip() or proc.stdout.strip()), file=sys.stderr)
-        return None
-    return output
+        fail("render.py failed while staging: " + (proc.stderr.strip() or proc.stdout.strip()))
 
 
 def atomic_copy(src, dst):
@@ -477,7 +793,7 @@ def cmd_publish(args):
     with version_lock(codemap):
         ctx = current_context(root, codemap, state_path)
         if ctx.get("needsInit"):
-            fail("modules.json missing; run the architecture-review free-copy init workflow first")
+            fail("modules.json missing; run the full architecture-review init workflow first")
 
         state = ctx["state"]
         contract, standard_path = load_audit_contract(state_path)
@@ -499,7 +815,7 @@ def cmd_publish(args):
             if expected != latest_version:
                 fail("expected baseline {!r}, found {!r}".format(expected, latest_version))
 
-        md_path = ctx["mdPath"]
+        html_path, md_path = ctx["htmlPath"], ctx["mdPath"]
 
         previous_state = ctx["previousState"] or {}
         same_source = ctx["sourceDelta"]["counts"]["added"] == 0 \
@@ -574,7 +890,10 @@ def cmd_publish(args):
             config = os.path.join(os.path.dirname(state_path), "config.json")
             if os.path.isfile(config):
                 copy_artifact(config, os.path.join(stage, "config.json"))
-            render_staged_audit(stage)
+            template_path = os.path.abspath(args.template or default_template_path())
+            if not os.path.isfile(template_path):
+                fail("render template missing: " + template_path)
+            render_staged_audit(stage, template_path)
 
             write_json(os.path.join(stage, "source-snapshot.json"), ctx["currentSnapshot"])
             write_json(os.path.join(stage, "delta.json"), {
@@ -663,13 +982,11 @@ def cmd_publish(args):
             update_live_artifacts_and_index(
                 codemap,
                 [(os.path.join(target, "modules.json"), state_path),
+                 (os.path.join(target, "codemap.html"), html_path),
                  (os.path.join(target, "codemap.md"), md_path)],
                 versions_root,
                 index,
             )
-            dashboard_path = None
-            if args.open_dashboard:
-                dashboard_path = open_audit_dashboard(root, state_path, codemap)
             print(json.dumps({
                 "status": "PUBLISHED",
                 "version": version,
@@ -682,7 +999,6 @@ def cmd_publish(args):
                 "changedModules": manifest["changedModules"],
                 "affectedModules": affected,
                 "unmappedChangedFiles": manifest["unmappedChangedFiles"],
-                "dashboardPath": dashboard_path,
             }, ensure_ascii=False, indent=2))
         finally:
             # Failed staging is intentionally preserved for diagnosis. Successful
@@ -693,17 +1009,6 @@ def cmd_publish(args):
 def verify_snapshot(snapshot):
     entries = snapshot.get("files") or []
     return snapshot.get("sourceFingerprint") == snapshot_fingerprint(entries)
-
-
-def validate_legacy_v1_state(contract, state):
-    """Validate the pre-dimensions v1 contract without rewriting retained history."""
-    contract.validate_working_state(state)
-    modules = state.get("modules") or []
-    if not modules:
-        raise ValueError("[MODULES_EMPTY] legacy audit-v0001 requires at least one module")
-    for index, module in enumerate(modules):
-        contract.validate_module_result(
-            module, "modules[{}]".format(index), require_audit=True)
 
 
 def verify_retained_semantics(base, manifest, version):
@@ -730,18 +1035,8 @@ def verify_retained_semantics(base, manifest, version):
         standard = read_json(standard_path)
         retained = AuditSchemaRegistry().read_retained(state)
         contract = AuditContract(standard)
-        legacy_v1 = (
-            version == "audit-v0001"
-            and not os.path.isfile(receipt_path)
-            and manifest.get("semanticValidation") is None
-            and state.get("semanticValidation") is None
-        )
-        if legacy_v1:
-            validate_legacy_v1_state(contract, retained["document"])
-            compatibility = "legacy-contract"
-        else:
-            contract.validate_publishable_state(retained["document"])
-            compatibility = retained["compatibilityStatus"]
+        contract.validate_publishable_state(retained["document"])
+        compatibility = retained["compatibilityStatus"]
     except (OSError, UnicodeError, ValueError) as exc:
         detail = format_contract_error(exc) if isinstance(exc, AuditContractError) else str(exc)
         return {
@@ -857,10 +1152,11 @@ def verify_repository(root, codemap, state_path, check_live=True):
     if check_live and active and os.path.isfile(state_path):
         try:
             live_state = read_json(state_path)
-            live_md = output_paths(root, state_path, live_state)[1]
+            live_html, live_md = output_paths(root, state_path, live_state)
             active_base = os.path.join(versions_root, active)
             active_manifest = read_json(os.path.join(active_base, "manifest.json"))
-            pairs = ((state_path, "modules.json"), (live_md, "codemap.md"))
+            pairs = ((state_path, "modules.json"), (live_html, "codemap.html"),
+                     (live_md, "codemap.md"))
             mismatches = []
             for live_path, artifact in pairs:
                 expected = (active_manifest.get("artifacts") or {}).get(artifact)
@@ -948,9 +1244,10 @@ def cmd_rollback(args):
         if not manifest.get("auditComplete"):
             fail("rollback target is not a complete audit: " + args.to)
         target_state = read_json(os.path.join(target, "modules.json"))
-        md_path = output_paths(root, state_path, target_state)[1]
+        html_path, md_path = output_paths(root, state_path, target_state)
         replacements = [
             (os.path.join(target, "modules.json"), state_path),
+            (os.path.join(target, "codemap.html"), html_path),
             (os.path.join(target, "codemap.md"), md_path),
         ]
         for optional in ("standard.json", "config.json"):
@@ -1002,13 +1299,13 @@ def main():
                          help="fail closed unless latestVersion matches (use 'none' for v0001)")
     publish.add_argument("--gate", action="append", default=[],
                          help="validation gate evidence recorded and fingerprinted; any *:fail value rejects")
+    publish.add_argument("--template",
+                         help="render template (default: architecture-review/assets/template.html)")
     publish.add_argument("--force", action="store_true", help="publish even with no source/audit delta")
     publish.add_argument("--allow-incomplete", action="store_true",
                           help="relax scan completeness only; semantic audit validation is never bypassed")
     publish.add_argument("--allow-unknown", action="store_true",
                          help="explicitly audit a non-detected project type")
-    publish.add_argument("--open-dashboard", action="store_true",
-                         help="open the four-lens audit dashboard after publishing")
     publish.set_defaults(func=cmd_publish)
 
     verify = sub.add_parser(

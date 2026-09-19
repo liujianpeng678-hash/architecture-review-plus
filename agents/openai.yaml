@@ -1,7 +1,7 @@
 interface:
-  display_name: "架构审查 Skill（Plus 版）"
-  short_description: "中文评分、模块图、方案选择、本机 AI 修复与实时进度"
-  default_prompt: "Use $architecture-review-plus as the default architecture audit skill. Review this project's architecture, open the Chinese dashboard and module map, and only after the user selects a plan dispatch the localhost repair flow with ordinary progress."
+  display_name: "架构审查 Skill"
+  short_description: "按需生成模块依赖图，并保留里程碑架构审计版本"
+  default_prompt: "Use $architecture-review to generate or refresh this project's requested or milestone architecture audit."
 
 policy:
   allow_implicit_invocation: true

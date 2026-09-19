@@ -198,14 +198,18 @@ def band_order(state):
 def load_standard(state_path, explicit=None):
     """Effective audit standard: explicit path → project override next to the state
     file (`<state dir>/standard.json`) → the skill's default `reference/standard.json`."""
-    project = os.path.join(os.path.dirname(os.path.abspath(state_path)), "standard.json")
-    candidate = explicit or (project if os.path.isfile(project) else os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "..", "reference", "standard.json"))
-    try:
-        with open(candidate, encoding="utf-8") as handle:
-            return json.load(handle)
-    except (ValueError, OSError) as exc:
-        raise ValueError("cannot load effective standard {}: {}".format(candidate, exc)) from exc
+    candidates = []
+    if explicit:
+        candidates.append(explicit)
+    candidates.append(os.path.join(os.path.dirname(os.path.abspath(state_path)), "standard.json"))
+    candidates.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "reference", "standard.json"))
+    for c in candidates:
+        if c and os.path.isfile(c):
+            try:
+                return json.load(open(c, encoding="utf-8"))
+            except (ValueError, OSError):
+                pass
+    return None
 
 
 def render_html(state, template, standard=None):
@@ -243,12 +247,12 @@ def render_md(state):
     out.append(f"  Interactive map:  {meta.get('htmlPath', 'codemap.html')}")
     out.append("-->\n")
     out.append(f"# {proj} — Functional Module Quality Audit\n")
-    out.append(f"> **模块图:** [`{meta.get('htmlPath','codemap.html')}`]"
+    out.append(f"> **Interactive view:** [`{meta.get('htmlPath','codemap.html')}`]"
                f"({os.path.basename(meta.get('htmlPath','codemap.html'))}) — "
-               "每个模块的分数、问题、代码行数和依赖关系；本文件是文字报告。\n")
+               "per-module scores, findings, LoC, and the dependency graph. This file is the written report.\n")
     gen = meta.get("generatedAt", "")
     loc_line = meta.get("locLine") or (
-        f"{meta.get('tracked_loc','?')} 代码行，涉及 {meta.get('tracked_files','?')} 个文件")
+        f"{meta.get('tracked_loc','?')} tracked LoC across {meta.get('tracked_files','?')} files")
     out.append(f"**Generated:** {gen} · **Modules:** {len(mods)} · **Size:** {loc_line}\n")
 
     lang_zh = meta.get("lang") == "zh"
@@ -288,8 +292,9 @@ def render_md(state):
     out.append("")
 
     # per-module LoC + score, grouped by band, sorted by loc desc
-    out.append("## 各模块代码行数与分数\n")
-    out.append("_代码行数按模块代表文件或目录统计；目录模块可能重叠，不能直接相加。_\n")
+    out.append("## Per-module lines of code & score\n")
+    out.append("_LoC is the representative file/folder per module; folder-level modules overlap "
+               "and are not additive._\n")
     for b in state.get("bands", []):
         if b.get("wire"):
             continue
@@ -298,7 +303,7 @@ def render_md(state):
         if not grp:
             continue
         out.append(f"### {b.get('t', b['id'])}\n")
-        out.append("| 模块 | 代码行数 | 分数 | 标签 |")
+        out.append("| Module | LoC | Score | Tags |")
         out.append("|---|--:|:--|:--|")
         for m in grp:
             tags = ", ".join(t for t in (m.get("tags") or []) if t != "clean") or "—"
@@ -341,29 +346,21 @@ def render_md(state):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--state", required=True)
-    ap.add_argument("--template")
-    ap.add_argument("--out-html")
-    ap.add_argument("--out-md")
+    ap.add_argument("--template", required=True)
+    ap.add_argument("--out-html", required=True)
+    ap.add_argument("--out-md", required=True)
     ap.add_argument("--standard", help="path to a custom standard.json (else project override → skill default)")
     args = ap.parse_args()
 
     state = json.load(open(args.state, encoding="utf-8"))
+    template = open(args.template, encoding="utf-8").read()
     standard = load_standard(args.state, args.standard)
-    if not args.out_html and not args.out_md:
-        ap.error("at least one of --out-html or --out-md is required")
-    if args.out_html:
-        if not args.template:
-            ap.error("--template is required with --out-html")
-        template = open(args.template, encoding="utf-8").read()
-        os.makedirs(os.path.dirname(os.path.abspath(args.out_html)), exist_ok=True)
-        open(args.out_html, "w", encoding="utf-8").write(render_html(state, template, standard))
-    if args.out_md:
-        os.makedirs(os.path.dirname(os.path.abspath(args.out_md)), exist_ok=True)
-        open(args.out_md, "w", encoding="utf-8").write(render_md(state))
+
+    open(args.out_html, "w", encoding="utf-8").write(render_html(state, template, standard))
+    open(args.out_md, "w", encoding="utf-8").write(render_md(state))
     n = len(state.get("modules", []))
     scored = sum(1 for m in state.get("modules", []) if m.get("score") is not None)
-    outputs = [path for path in (args.out_html, args.out_md) if path]
-    print(f"rendered {n} modules ({scored} scored) -> {' + '.join(outputs)}")
+    print(f"rendered {n} modules ({scored} scored) -> {args.out_html} + {args.out_md}")
 
 
 if __name__ == "__main__":

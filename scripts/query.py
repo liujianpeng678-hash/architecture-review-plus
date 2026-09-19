@@ -21,33 +21,10 @@ Examples:
 Filters combine with AND. --tag may be repeated (ANY by default, --match-all for AND).
 Stdlib only.
 """
-import argparse, json, os, sys
-
-from audit_contract import AuditContract, AuditContractError
+import argparse, json, sys
 
 # include a module if its score is strictly below this bound (grade and worse).
-def effective_standard_path(state_path):
-    project = os.path.join(os.path.dirname(os.path.abspath(state_path)), "standard.json")
-    if os.path.isfile(project):
-        return project
-    return os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "reference", "standard.json"))
-
-
-def load_contract(state_path):
-    try:
-        return AuditContract.from_path(effective_standard_path(state_path))
-    except (OSError, UnicodeError, ValueError, AuditContractError) as exc:
-        raise SystemExit("query: ERROR - cannot load effective standard: {}".format(exc))
-
-
-def grade_bounds(contract):
-    ordered = sorted(contract.rubric, key=lambda item: item[1], reverse=True)
-    # Return each grade's exclusive upper bound so ``score < bound`` includes
-    # the complete grade band, including the lowest grade.
-    bounds = {}
-    for index, (grade, _) in enumerate(ordered):
-        bounds[grade] = 101 if index == 0 else ordered[index - 1][1]
-    return bounds
+GRADE_BOUND = {"A": 101, "B": 90, "C": 75, "D": 60, "F": 40}
 
 
 def main():
@@ -57,7 +34,7 @@ def main():
         pass
     ap = argparse.ArgumentParser(description="filter modules.json for agents")
     ap.add_argument("--state", required=True)
-    ap.add_argument("--max-grade", choices=["A", "B", "C", "D", "F"],
+    ap.add_argument("--max-grade", choices=list(GRADE_BOUND),
                     help="include this grade AND worse (e.g. C → C,D,F)")
     ap.add_argument("--min-score", type=int)
     ap.add_argument("--max-score", type=int)
@@ -76,13 +53,11 @@ def main():
     ap.add_argument("--format", choices=["table", "ids", "paths", "findings", "json", "count"],
                     default="table")
     args = ap.parse_args()
-    contract = load_contract(args.state)
-    grade_bound = grade_bounds(contract)
 
     state = json.load(open(args.state, encoding="utf-8"))
     mods = state.get("modules", [])
 
-    bound = grade_bound[args.max_grade] if args.max_grade else None
+    bound = GRADE_BOUND[args.max_grade] if args.max_grade else None
     tags = set(args.tag)
 
     def keep(m):

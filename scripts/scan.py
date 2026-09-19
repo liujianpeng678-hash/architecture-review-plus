@@ -83,19 +83,10 @@ DEFAULT_EXCLUDES = [
 
 
 def iter_files(root, patterns, excludes):
-    root = os.path.abspath(root)
     seen = set()
     for pat in patterns:
         for p in glob.glob(os.path.join(root, pat), recursive=True):
             if not os.path.isfile(p):
-                continue
-            # Do not let a project symlink expand the audit scope outside root.
-            real_root = os.path.realpath(root)
-            real_path = os.path.realpath(p)
-            try:
-                if os.path.commonpath((real_root, real_path)) != real_root:
-                    continue
-            except ValueError:
                 continue
             rp = os.path.relpath(p, root).replace("\\", "/")
             low = "/" + rp.lower()
@@ -118,8 +109,8 @@ def module_stats(root, module, excludes):
     for p, rp in sorted(iter_files(root, pats, excl), key=lambda x: x[1]):
         try:
             data = open(p, "rb").read()
-        except OSError as exc:
-            raise OSError("cannot read module source {}: {}".format(rp, exc)) from exc
+        except OSError:
+            continue
         loc += data.count(b"\n") + (1 if data and not data.endswith(b"\n") else 0)
         parts.append(rp + ":" + hashlib.sha256(data).hexdigest())
         nfiles += 1
@@ -181,8 +172,8 @@ def main():
         try:
             data = open(p, "rb").read()
             tracked_loc += data.count(b"\n") + (1 if data and not data.endswith(b"\n") else 0)
-        except OSError as exc:
-            raise OSError("cannot read tracked source {}: {}".format(rp, exc)) from exc
+        except OSError:
+            pass
 
     # git: what changed since the last codemap run (meta.rev)?
     since = state.get("meta", {}).get("rev")

@@ -55,23 +55,5 @@
   {"key":"warning","labelZh":"需关注","en":"localized coupling or evolution cost"},
   {"key":"risk","labelZh":"优先处理","en":"material architecture or recovery risk"},
   {"key":"unknown","labelZh":"待确认","en":"not checked or evidence is insufficient"}
- ],
- "maintainabilityClaims": {
-  "scoped": {
-   "passingStatus": "SCOPED_PASSED",
-   "failingStatus": "SCOPED_REWORK_REQUIRED",
-   "minimumScore": 75,
-   "criticalMinimumScore": 80,
-   "requiredGates": ["focused-tests", "independent-acceptance", "architecture-scope"]
-  },
-  "project": {
-   "passingStatus": "PROJECT_MAINTAINABLE",
-   "failingStatus": "PROJECT_REWORK_REQUIRED",
-   "minimumScore": 75,
-   "criticalMinimumScore": 80,
-   "forbiddenDimensionStatuses": ["risk", "unknown"],
-   "unfinishedTags": ["stub", "placeholder", "fake-output"],
-   "requiredGates": ["build-parse", "critical-regression", "false-green", "ci"]
-  }
- }
+ ]
 }

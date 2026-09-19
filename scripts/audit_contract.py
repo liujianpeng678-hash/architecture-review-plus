@@ -10,7 +10,6 @@ use this module instead of re-implementing the rubric.
 import copy
 import hashlib
 import json
-import re
 
 
 STATE_SCHEMA_VERSION = 1
@@ -33,18 +32,9 @@ def stable_json_hash(value):
     return hashlib.sha256(encoded).hexdigest()
 
 
-DEFAULT_RUBRIC = (
-    ("A", 90), ("B", 75), ("C", 60), ("D", 40), ("F", 0)
-)
-
-
-def grade_for(score, rubric=None):
-    """Return the grade from the effective rubric's lower bounds."""
-    bounds = DEFAULT_RUBRIC if rubric is None else rubric
-    for grade, lower_bound in sorted(bounds, key=lambda item: item[1], reverse=True):
-        if score >= lower_bound:
-            return grade
-    return "F"
+def grade_for(score):
+    return ("A" if score >= 90 else "B" if score >= 75 else
+            "C" if score >= 60 else "D" if score >= 40 else "F")
 
 
 class ContractIssue:
@@ -141,8 +131,6 @@ class AuditContract:
             _issue(issues, "STANDARD_NOT_OBJECT", "$", "standard must be a JSON object")
             raise AuditContractError(issues)
 
-        self.rubric = self._parse_rubric(standard.get("rubric"), issues)
-
         tags = standard.get("tags")
         if not isinstance(tags, list) or not tags:
             _issue(issues, "STANDARD_TAGS_INVALID", "tags", "standard tags must be a non-empty array")
@@ -198,45 +186,6 @@ class AuditContract:
             ],
         })
 
-    @staticmethod
-    def _parse_rubric(raw, issues):
-        if not isinstance(raw, list) or not raw:
-            _issue(issues, "STANDARD_RUBRIC_INVALID", "rubric",
-                   "standard rubric must be a non-empty array")
-            return list(DEFAULT_RUBRIC)
-        bounds = []
-        grades = set()
-        for index, item in enumerate(raw):
-            path = "rubric[{}]".format(index)
-            if not isinstance(item, dict):
-                _issue(issues, "STANDARD_RUBRIC_ENTRY_INVALID", path,
-                       "rubric entries must be objects")
-                continue
-            grade = item.get("grade")
-            if not isinstance(grade, str) or grade.strip().upper() not in VALID_GRADES:
-                _issue(issues, "STANDARD_RUBRIC_GRADE_INVALID", path,
-                       "rubric grade must be A, B, C, D or F")
-                continue
-            grade = grade.strip().upper()
-            lower = None
-            match = re.match(r"\s*(-?\d+)", str(item.get("range", "")))
-            if match:
-                lower = int(match.group(1))
-            if lower is None or not 0 <= lower <= 100:
-                _issue(issues, "STANDARD_RUBRIC_RANGE_INVALID", path,
-                       "rubric range must start with a score from 0 to 100")
-                continue
-            if grade in grades:
-                _issue(issues, "STANDARD_RUBRIC_DUPLICATE", path,
-                       "duplicate rubric grade: " + grade)
-                continue
-            grades.add(grade)
-            bounds.append((grade, lower))
-        if grades != VALID_GRADES:
-            _issue(issues, "STANDARD_RUBRIC_INCOMPLETE", "rubric",
-                   "standard rubric must define exactly A, B, C, D and F")
-        return bounds or list(DEFAULT_RUBRIC)
-
     @classmethod
     def from_path(cls, path):
         with open(path, encoding="utf-8") as handle:
@@ -267,10 +216,10 @@ class AuditContract:
         if grade not in VALID_GRADES:
             _issue(issues, "AUDIT_GRADE_INVALID", "grade",
                    "grade must be one of A, B, C, D, F")
-        elif score is not None and 0 <= score <= 100 and grade != grade_for(score, self.rubric):
+        elif score is not None and 0 <= score <= 100 and grade != grade_for(score):
             _issue(issues, "AUDIT_GRADE_MISMATCH", "grade",
                    "grade {} doesn't match score {} (rubric grade is {})".format(
-                       grade, score, grade_for(score, self.rubric)))
+                       grade, score, grade_for(score)))
 
         raw_tags = result.get("tags")
         tags = ["clean"] if raw_tags in (None, []) else raw_tags
