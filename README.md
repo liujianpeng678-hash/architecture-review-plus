@@ -1,5 +1,10 @@
 # 🧹 codemap
 
+[中文安装与使用](INSTALL.zh-CN.md) · [Download ZIP](https://github.com/liujianpeng678-hash/architecture-review-plus/archive/refs/heads/main.zip)
+
+Open source under the [MIT license](LICENSE). Anyone can download, use, modify,
+and redistribute this skill under that license; no invitation or activation key is required.
+
 **A code janitor for AI coding agents.** Point it at any repo and it draws an
 **interactive architecture map**, scores **every module 0–100** for technical debt, and
 helps you **pay down the cruft** — incrementally, one commit at a time.
@@ -25,10 +30,38 @@ helps you **pay down the cruft** — incrementally, one commit at a time.
 
 The current skill is published at the root of
 [`liujianpeng678-hash/architecture-review-plus`](https://github.com/liujianpeng678-hash/architecture-review-plus).
-Clone the repository into your agent's skills directory (for Codex:
-`~/.codex/skills/architecture-review-plus/`). Replace an older installation rather than
-keeping duplicate registrations. Restart or open a new session and invoke
-**`$architecture-review`**.
+Requires Git, Python 3.9+ and an AI coding agent that can read local files and run
+Python scripts. The engine uses only the Python standard library. Your agent/model
+account is separate from this free skill.
+
+For Codex, ask its skill installer:
+
+```text
+Use $skill-installer to install https://github.com/liujianpeng678-hash/architecture-review-plus (the skill is at the repository root).
+```
+
+Or clone into the user skill directory documented by
+[Codex](https://learn.chatgpt.com/docs/build-skills):
+
+```sh
+git clone https://github.com/liujianpeng678-hash/architecture-review-plus.git "$HOME/.agents/skills/architecture-review-plus"
+```
+
+The same command works in PowerShell. Keep only one installed copy if you already
+use an older skill location. If the skill does not appear, restart Codex. Open your
+target project and invoke **`$architecture-review`**, for example:
+
+```text
+Use $architecture-review to review this project's module boundaries and dependencies.
+Explain findings with code evidence and generate the interactive report.
+```
+
+To update a Git installation, run `git -C "$HOME/.agents/skills/architecture-review-plus" pull --ff-only`.
+If you have edited the installed files, preserve those edits before updating.
+Without Git, download the ZIP above and extract the complete repository folder into
+the skill directory; `SKILL.md` must be directly inside `architecture-review-plus`.
+Other agents can use the complete folder in their supported skill location or read
+its `SKILL.md` directly; automatic discovery depends on the host.
 
 Keep all scripts, references and assets together. This version replaces the previous
 repository-root implementation. Project audit data lives in the project's `.codemap/`
