@@ -18,8 +18,10 @@ description: >-
 
 Evaluate real maintenance scenarios: change cost, fault isolation and recovery. Read
 [reference/MAINTAINABILITY.md](reference/MAINTAINABILITY.md) before reviewing or fixing.
-That reference governs coverage, feedback and acceptance; STANDARDS.md governs scoring
-and DATA_MODEL.md governs storage. Review requests alone do not authorize product fixes.
+That reference governs coverage, feedback and acceptance; STANDARDS.md governs scoring,
+DATA_MODEL.md governs storage, and [QUALITY_GATES.md](reference/QUALITY_GATES.md)
+governs the long-term maintainability gates. Review requests alone do not authorize
+product fixes.
 
 Builds and maintains three coupled artifacts for a project:
 
@@ -46,6 +48,30 @@ the retained-version view, and the editable standard remain available only on de
 The HTML and MD are **always regenerated** from `modules.json` by `render.py`. Never
 hand-edit them. The state file makes everything **incremental**: a content hash per
 module tells us exactly what changed and what needs re-auditing.
+
+## Long-term quality gates
+
+Architecture health is necessary but not sufficient for a maintainable delivery. When
+the project enables `qualityGates` in `.codemap/config.json`, a retained audit also
+requires explicit passes for scope, architecture, code quality, verification, tooling,
+security/performance, and change safety. Read [QUALITY_GATES.md](reference/QUALITY_GATES.md)
+before `init`, `update`, `fix`, or `publish` when gates are enabled.
+
+The gates cover the quality dimensions that are not represented by the architecture
+graph alone:
+
+- correctness, intent, simplicity, useful abstractions and explicit error semantics;
+- tests, regression safety, reproducible checks and independent acceptance where risk
+  warrants it;
+- formatter/linter/type/build/static-analysis evidence rather than style assertions;
+- security, dependency exposure, resource bounds and measured performance where
+  relevant;
+- scoped, reviewable, reversible changes with a recorded reason.
+
+Gate evidence belongs in the audit notes/report. The publish receipt records only the
+normalized `<gate>:pass` tokens, while `version.py` fails closed on missing configured
+gates, `review`, or `fail` results. A gate marked `review` remains a draft and must not
+be presented as an accepted retained audit.
 
 ## Selective website/game audit contract
 
@@ -229,8 +255,10 @@ Use when no `modules.json` exists yet. (Also accepts `generate` as an alias.)
 
    Write `config.json` like:
    ```json
-   {"lang":"zh","project":"My App","subtitle":"…","outputDir":".codemap",
-    "htmlFile":"codemap.html","mdFile":"codemap.md"}
+    {"lang":"zh","project":"My App","subtitle":"…","outputDir":".codemap",
+     "htmlFile":"codemap.html","mdFile":"codemap.md",
+     "qualityGates":{"enforce":true,"required":["scope","architecture",
+       "code-quality","verification","tooling","security-performance","change-safety"]}}
    ```
    and apply it to `meta` when you build `modules.json`. Re-read `config.json` on later
    runs so preferences persist.
@@ -257,7 +285,10 @@ Use when no `modules.json` exists yet. (Also accepts `generate` as an alias.)
    notes. Do not invent themes to reach a count.
 5. **Render:** run the render command. Then **stamp the git baseline** so future updates
    can diff from here: `python3 scripts/scan.py --root <proj> --state <state> --stamp-rev`.
-6. **Retain the audit:** when this is a triggered retained website/game review, run
+6. **Run the quality gates:** when `qualityGates.enforce` is true, complete every
+   configured gate and record its evidence. Do not publish with a missing, `review`, or
+   failed gate. Pass each result to `version.py publish` as `--gate <name>:pass`.
+7. **Retain the audit:** when this is a triggered retained website/game review, run
    `python3 scripts/version.py publish --root <proj> --mode full --expected-baseline none`, followed by
    `python3 scripts/version.py verify --root <proj>`. Retained audits may not use
    `--allow-incomplete`. Report the audit version together with avg score, grade spread,
@@ -306,13 +337,20 @@ uses git to show recent history and scope the work.
    regenerate the four lens summaries. A public-contract change normally affects both
    `contract` and `dependency`; persistence changes normally affect `evolution` and
    `safeguards`; do not blindly mark every dimension stale.
-6. **Render**, then **stamp the baseline**:
-   `python3 scripts/scan.py --root <proj> --state <state> --stamp-rev` caches the current
-   HEAD into `meta.rev`, so the next `update`/`check` diffs from here. Summarize which
-   modules were re-scored and how their score moved, with the commits that caused it.
-7. **Publish the successor:** for a website/game, run
-   `python3 scripts/version.py publish --root <proj> --mode incremental --expected-baseline <latest>`, using
-   `expanded_incremental` for broad public contracts. Then run `version.py verify`.
+ 6. **Render**, then **stamp the baseline**:
+    `python3 scripts/scan.py --root <proj> --state <state> --stamp-rev` caches the current
+    HEAD into `meta.rev`, so the next `update`/`check` diffs from here. Summarize which
+    modules were re-scored and how their score moved, with the commits that caused it.
+ 7. **Run the configured quality gates:** complete the applicable checks in
+    `reference/QUALITY_GATES.md`, record evidence, and prepare one `--gate <name>:pass`
+    argument for every required gate. Any `review` or missing gate leaves the update as
+    a draft.
+ 8. **Publish the successor:** for a website/game, run
+    `python3 scripts/version.py publish --root <proj> --mode incremental --expected-baseline <latest> \
+      --gate scope:pass --gate architecture:pass --gate code-quality:pass \
+      --gate verification:pass --gate tooling:pass --gate security-performance:pass \
+      --gate change-safety:pass`, using `expanded_incremental` for broad public
+    contracts. Then run `version.py verify`.
    `NO_DELTA` is a valid result and must not be converted into an empty version.
 
 ## Command: `version status|publish|verify|rollback`
@@ -325,9 +363,11 @@ Use these direct commands for version administration without changing the audit 
   empty module and all eight dimensions/four lenses exist; it chooses the next version,
   first runs the shared semantic preflight, then emits a semantic receipt, stamps
   version/delta into staged state, regenerates both projections, and never overwrites an
-  older one. `--allow-incomplete` is never a semantic bypass, and any `--gate *:fail`
-  blocks promotion. Use `--scope`, `--gate`, and `--expected-baseline` to make the
-  manifest answer what was audited, what passed, and which baseline was expected.
+  older one. `--allow-incomplete` is never a semantic bypass, any `--gate *:fail`
+  blocks promotion, and an enabled `qualityGates` policy also blocks missing or
+  `review` results. Use `--scope`, one `--gate <name>:pass` per required gate, and
+  `--expected-baseline` to make the manifest answer what was audited, what passed, and
+  which baseline was expected.
 - `verify` independently re-reads every retained state and effective standard. It reports
   `integrityValid`, `semanticValid`, and `compatibilityStatus`, in addition to checking
   artifact hashes, source fingerprints, index entries, prior-manifest links and mutable
@@ -359,12 +399,14 @@ Only when the user authorizes fixes:
    existing failures if a meaningful before/after comparison remains possible.
 3. Make the smallest justified correction. Test edits for intended contract changes
    require disclosed rationale; never delete, skip or weaken checks to get green.
-4. Verify defect resolution, baseline regression safety and scenario benefit without
-   relocating complexity. High-risk fixes require independent acceptance; if unavailable,
-   report implementation complete but acceptance pending.
-5. Re-audit with sufficient coverage. Report before/after evidence, gaps, comparable
-   score rationale and `lastFix`. Failed/pending acceptance cannot be called accepted.
-6. Never auto-commit, revert unrelated changes or expand scope without authority.
+ 4. Verify defect resolution, baseline regression safety and scenario benefit without
+    relocating complexity. High-risk fixes require independent acceptance; if unavailable,
+    report implementation complete but acceptance pending.
+ 5. Run the applicable quality gates. A fix that passes tests but fails code-quality,
+    tooling, security/performance or change-safety evidence is not accepted.
+ 6. Re-audit with sufficient coverage. Report before/after evidence, gaps, comparable
+    score rationale and `lastFix`. Failed/pending acceptance cannot be called accepted.
+ 7. Never auto-commit, revert unrelated changes or expand scope without authority.
    Retain completed triggered reviews through version.py; pending work stays draft.
 
 ---

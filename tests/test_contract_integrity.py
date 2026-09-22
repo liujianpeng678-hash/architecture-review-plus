@@ -150,6 +150,52 @@ class TestSemanticIntegrity(Base):
         self.assertFalse(os.path.exists(
             os.path.join(self.d, ".codemap", "versions", "index.json")))
 
+    def test_configured_quality_gates_fail_closed(self):
+        self._prepare()
+        write_json(os.path.join(self.d, ".codemap", "config.json"), {
+            "qualityGates": {
+                "enforce": True,
+                "required": ["architecture", "code-quality", "verification"],
+            }
+        })
+        missing = self._publish("--mode", "full")
+        self.assertNotEqual(missing.returncode, 0)
+        self.assertIn("required quality gates missing", missing.stderr)
+
+        review = self._publish(
+            "--mode", "full",
+            "--gate", "architecture:pass",
+            "--gate", "code-quality:review",
+            "--gate", "verification:pass",
+        )
+        self.assertNotEqual(review.returncode, 0)
+        self.assertIn("required quality gates not passed", review.stderr)
+
+        passed = self._publish(
+            "--mode", "full",
+            "--gate", "architecture:pass",
+            "--gate", "code-quality:pass",
+            "--gate", "verification:pass",
+        )
+        self.assertEqual(passed.returncode, 0, passed.stderr)
+
+    def test_quality_gate_policy_change_is_not_treated_as_no_delta(self):
+        self._prepare()
+        first = self._publish("--mode", "full", "--expected-baseline", "none")
+        self.assertEqual(first.returncode, 0, first.stderr)
+        write_json(os.path.join(self.d, ".codemap", "config.json"), {
+            "qualityGates": {
+                "enforce": True,
+                "required": ["architecture"],
+            }
+        })
+        second = self._publish(
+            "--mode", "incremental", "--expected-baseline", "audit-v0001",
+            "--gate", "architecture:pass",
+        )
+        self.assertEqual(second.returncode, 0, second.stderr)
+        self.assertIn("audit-v0002", second.stdout)
+
     def test_allow_incomplete_never_bypasses_semantic_contract(self):
         self._prepare()
         state = self.load()

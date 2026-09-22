@@ -39,9 +39,14 @@ from audit_contract import (
 )
 
 SCHEMA_VERSION = STATE_SCHEMA_VERSION
-TOOL_VERSION = "2.1"
+TOOL_VERSION = "2.2"
 VERSION_RE = re.compile(r"^audit-v(\d{4})$")
 MODES = {"full", "incremental", "expanded_incremental"}
+
+# These names are intentionally stable: projects may choose a smaller or larger
+# policy, but a configured policy must use explicit, reviewable gate names.  The
+# evidence behind a token lives in the audit notes; the token is the promotion receipt.
+QUALITY_GATE_STATES = {"pass", "review", "fail"}
 
 SOURCE_EXCLUDES = (
     "/.codemap/", "/.git/", "/.svn/", "/.hg/", "/.idea/", "/.vs/",
@@ -74,6 +79,63 @@ def fail(message):
 def read_json(path):
     with open(path, encoding="utf-8") as f:
         return json.load(f)
+
+
+def quality_gate_policy_from_config(path):
+    """Read the optional project quality-gate policy.
+
+    Keeping this policy in config.json preserves compatibility with older codemaps
+    while allowing new init runs to opt into fail-closed long-term quality gates.
+    """
+    if not os.path.isfile(path):
+        return {"enforce": False, "required": []}
+    try:
+        config = read_json(path)
+    except (OSError, ValueError, TypeError) as exc:
+        fail("invalid .codemap/config.json: {}".format(exc))
+    if not isinstance(config, dict):
+        fail(".codemap/config.json must contain an object")
+    policy = config.get("qualityGates") or {}
+    if not isinstance(policy, dict):
+        fail("qualityGates must be an object in .codemap/config.json")
+    required = policy.get("required") or []
+    if not isinstance(required, list) or any(
+            not isinstance(item, str) or not item.strip() for item in required):
+        fail("qualityGates.required must be a non-empty-name array")
+    required = sorted(set(item.strip() for item in required))
+    return {"enforce": bool(policy.get("enforce")) and bool(required),
+            "required": required}
+
+
+def quality_gate_policy(state_path):
+    return quality_gate_policy_from_config(
+        os.path.join(os.path.dirname(os.path.abspath(state_path)), "config.json"))
+
+
+def validate_quality_gates(state_path, raw_gates):
+    """Fail closed when an enabled project is missing a required promotion gate."""
+    policy = quality_gate_policy(state_path)
+    if not policy["enforce"]:
+        return
+    results = {}
+    for raw in raw_gates or []:
+        value = str(raw).strip()
+        if ":" not in value:
+            continue
+        name, status = value.rsplit(":", 1)
+        name = name.strip()
+        status = status.strip().lower()
+        if name in policy["required"]:
+            if status not in QUALITY_GATE_STATES:
+                fail("invalid status for quality gate {}: {}".format(name, status))
+            results[name] = status
+    missing = [name for name in policy["required"] if name not in results]
+    if missing:
+        fail("required quality gates missing: " + ", ".join(missing))
+    blocked = [name for name in policy["required"] if results[name] != "pass"]
+    if blocked:
+        fail("required quality gates not passed: " + ", ".join(
+            "{}={}".format(name, results[name]) for name in blocked))
 
 
 def write_json(path, value):
@@ -587,10 +649,14 @@ def current_context(root, codemap, state_path):
     source_delta = snapshot_delta(previous_snapshot, current_snapshot)
     scan_report = run_scan(root, state_path)
     previous_state = None
+    previous_gate_policy = {"enforce": False, "required": []}
     if latest_base:
         previous_state_path = os.path.join(latest_base, "modules.json")
         if os.path.isfile(previous_state_path):
             previous_state = read_json(previous_state_path)
+        previous_gate_policy = quality_gate_policy_from_config(
+            os.path.join(latest_base, "config.json"))
+    current_gate_policy = quality_gate_policy(state_path)
     mod_delta = module_delta(previous_state, state)
     arch_delta = architecture_delta(previous_state, state)
     changed_files = source_delta["added"] + source_delta["modified"] + source_delta["removed"]
@@ -617,6 +683,8 @@ def current_context(root, codemap, state_path):
         "sourceDelta": source_delta,
         "scan": scan_report,
         "previousState": previous_state,
+        "qualityGatePolicy": current_gate_policy,
+        "previousQualityGatePolicy": previous_gate_policy,
         "moduleDelta": mod_delta,
         "architectureDelta": arch_delta,
         "mappedChangedFiles": mapped,
@@ -825,7 +893,11 @@ def cmd_publish(args):
             stable_json_hash(architecture_state_view(previous_state))
             == stable_json_hash(architecture_state_view(state))
         )
-        if latest_version and same_source and same_architecture and not args.force:
+        same_quality_policy = (
+            ctx.get("qualityGatePolicy") == ctx.get("previousQualityGatePolicy")
+        )
+        if latest_version and same_source and same_architecture and same_quality_policy \
+                and not args.force:
             print(json.dumps({
                 "status": "NO_DELTA",
                 "latestVersion": latest_version,
@@ -848,6 +920,10 @@ def cmd_publish(args):
         scope = version_scope(args, state, mode, affected, architecture_change)
         issue_changes = issue_delta(previous_state, state)
         created_at = now_iso()
+        # A configured project policy is a real promotion gate, not a note in the
+        # report.  Validate it before allocating/staging a version so a blocked
+        # delivery cannot leave a partial retained snapshot behind.
+        validate_quality_gates(state_path, flatten_values(args.gate))
         try:
             semantic_receipt = contract.build_preflight_receipt(
                 state,
@@ -1298,7 +1374,7 @@ def main():
     publish.add_argument("--expected-baseline",
                          help="fail closed unless latestVersion matches (use 'none' for v0001)")
     publish.add_argument("--gate", action="append", default=[],
-                         help="validation gate evidence recorded and fingerprinted; any *:fail value rejects")
+                         help="gate receipt NAME:pass|review|fail; configured quality gates fail closed")
     publish.add_argument("--template",
                          help="render template (default: architecture-review/assets/template.html)")
     publish.add_argument("--force", action="store_true", help="publish even with no source/audit delta")

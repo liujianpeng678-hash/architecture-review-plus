@@ -11,6 +11,9 @@ agent that can read instructions and spawn sub-tasks can drive it.**
   commands. Follow it exactly.
 - **`reference/STANDARDS.md`** — the fixed scoring rubric, smell taxonomy (with
   per-language equivalents), severity levels, and the **exact per-module audit prompt**.
+- **`reference/QUALITY_GATES.md`** — the long-term code-quality, verification, tooling,
+  security/performance and change-safety gates required before an enabled project can
+  publish a retained audit.
 - **`reference/DATA_MODEL.md`** — the `modules.json` schema (the source of truth).
 
 ## Non-negotiable rules

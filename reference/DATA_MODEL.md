@@ -121,6 +121,21 @@ atomic state repository; then re-render.
 }
 ```
 
+The sibling `.codemap/config.json` may enable fail-closed promotion gates:
+
+```json
+{
+  "qualityGates": {
+    "enforce": true,
+    "required": ["scope", "architecture", "code-quality", "verification",
+                  "tooling", "security-performance", "change-safety"]
+  }
+}
+```
+
+When enabled, `version.py` requires every configured gate to be passed before
+promotion; see [QUALITY_GATES.md](QUALITY_GATES.md).
+
 ## Field ownership
 
 | Field | Written by | When |

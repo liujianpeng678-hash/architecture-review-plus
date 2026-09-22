@@ -16,6 +16,8 @@ helps you **pay down the cruft** — incrementally, one commit at a time.
 > glue. **codemap surfaces that rot, ranks it, and hands an AI agent a clear punch-list to
 > fix it** — with a regression-gated fix loop: a change is accepted only when evidence shows the original problem is resolved and required behavior is preserved.
 > High-risk fixes require independent acceptance; local fixes may use disclosed self-review.
+> Projects can also enable fail-closed quality gates for code quality, verification,
+> tooling, security/performance and change safety before retaining an audit version.
 
 ![architecture map](examples/01-map.png)
 
@@ -58,6 +60,10 @@ Most "architecture diagram" tools draw *files and imports*. codemap is different
 - **Regression-gated cleanup.** `fix` captures baseline checks and target reproductions,
   repairs the problem, verifies resolution and regression safety, then re-audits.
   High-risk fixes require independent acceptance; unavailable verification stays pending.
+- **Long-term quality gates.** An enabled project policy requires explicit passes for
+  scope, architecture, code quality, verification, tooling, security/performance and
+  change safety before `version publish` can promote a retained audit. See
+  [`reference/QUALITY_GATES.md`](reference/QUALITY_GATES.md).
 
 It's the maintenance pass you never have time to do, turned into something an agent can
 run on a schedule.
@@ -119,7 +125,7 @@ preferences (UI language, output location, project title) and saves them to
 | `/codemap check` | read-only: is the map stale? shows commits since last run + drifted / new / deleted modules |
 | `/codemap update` | incremental + git-aware: re-audit only changed modules, re-render |
 | `/codemap version status` | compare current website/game source and audit state with the latest retained version |
-| `/codemap version publish` | retain a completed full or incremental audit as the next immutable version |
+| `/codemap version publish` | retain a completed audit after configured quality gates as the next immutable version |
 | `/codemap version verify` | independently verify retained bytes, audit semantics, compatibility and the version chain |
 | `/codemap test <module>` | generate a regression-net of tests for a module |
 | `/codemap fix <module>` | regression-gated cleanup: lock baseline → fix → risk-proportionate acceptance → re-score |
@@ -169,6 +175,7 @@ codemap/
   LICENSE           # MIT
   reference/
     STANDARDS.md    # scoring rubric, smell taxonomy, severities, subagent prompts
+    QUALITY_GATES.md # long-term code-quality and delivery gates
     DATA_MODEL.md   # modules.json schema
     standard.json   # the machine-readable default standard (overridable per project)
   scripts/          # deterministic, stdlib-only Python
